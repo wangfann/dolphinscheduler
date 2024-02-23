@@ -26,14 +26,16 @@ import static org.apache.dolphinscheduler.api.enums.Status.QUERY_RULE_LIST_PAGIN
 import org.apache.dolphinscheduler.api.exceptions.ApiException;
 import org.apache.dolphinscheduler.api.service.DqExecuteResultService;
 import org.apache.dolphinscheduler.api.service.DqRuleService;
+import org.apache.dolphinscheduler.api.utils.PageInfo;
 import org.apache.dolphinscheduler.api.utils.Result;
-import org.apache.dolphinscheduler.common.Constants;
-import org.apache.dolphinscheduler.common.utils.ParameterUtils;
+import org.apache.dolphinscheduler.common.constants.Constants;
+import org.apache.dolphinscheduler.dao.entity.DqExecuteResult;
+import org.apache.dolphinscheduler.dao.entity.DqRule;
 import org.apache.dolphinscheduler.dao.entity.User;
+import org.apache.dolphinscheduler.plugin.task.api.utils.ParameterUtils;
+import org.apache.dolphinscheduler.spi.params.base.ParamsOptions;
 
-import springfox.documentation.annotations.ApiIgnore;
-
-import java.util.Map;
+import java.util.List;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
@@ -44,15 +46,16 @@ import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.web.bind.annotation.RestController;
 
-import io.swagger.annotations.Api;
-import io.swagger.annotations.ApiImplicitParam;
-import io.swagger.annotations.ApiImplicitParams;
-import io.swagger.annotations.ApiOperation;
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.Parameter;
+import io.swagger.v3.oas.annotations.Parameters;
+import io.swagger.v3.oas.annotations.media.Schema;
+import io.swagger.v3.oas.annotations.tags.Tag;
 
 /**
  * data quality controller
  */
-@Api(tags = "DATA_QUALITY_SERVICE")
+@Tag(name = "DATA_QUALITY_TAG")
 @RestController
 @RequestMapping("/data-quality")
 public class DataQualityController extends BaseController {
@@ -68,16 +71,16 @@ public class DataQualityController extends BaseController {
      * @param ruleId ruleId
      * @return from-create json
      */
-    @ApiOperation(value = "getRuleFormCreateJson", notes = "GET_RULE_FORM_CREATE_JSON_NOTES")
-    @ApiImplicitParams({
-            @ApiImplicitParam(name = "ruleId", value = "RULE_ID", dataTypeClass = int.class, example = "1")
+    @Operation(summary = "getRuleFormCreateJson", description = "GET_RULE_FORM_CREATE_JSON_NOTES")
+    @Parameters({
+            @Parameter(name = "ruleId", description = "RULE_ID", schema = @Schema(implementation = int.class, example = "1"))
     })
     @GetMapping(value = "/getRuleFormCreateJson")
     @ResponseStatus(HttpStatus.OK)
     @ApiException(GET_RULE_FORM_CREATE_JSON_ERROR)
-    public Result getRuleFormCreateJsonById(@RequestParam(value = "ruleId") int ruleId) {
-        Map<String, Object> result = dqRuleService.getRuleFormCreateJsonById(ruleId);
-        return returnDataList(result);
+    public Result<String> getRuleFormCreateJsonById(@RequestParam(value = "ruleId") int ruleId) {
+        String ruleFormCreateJsonById = dqRuleService.getRuleFormCreateJsonById(ruleId);
+        return Result.success(ruleFormCreateJsonById);
     }
 
     /**
@@ -89,45 +92,45 @@ public class DataQualityController extends BaseController {
      * @param pageSize page size
      * @return rule page
      */
-    @ApiOperation(value = "queryRuleListPaging", notes = "QUERY_RULE_LIST_PAGING_NOTES")
-    @ApiImplicitParams({
-            @ApiImplicitParam(name = "searchVal", value = "SEARCH_VAL", dataTypeClass = String.class),
-            @ApiImplicitParam(name = "ruleType", value = "RULE_TYPE", dataTypeClass = int.class, example = "1"),
-            @ApiImplicitParam(name = "startDate", value = "START_DATE", dataTypeClass = String.class),
-            @ApiImplicitParam(name = "endDate", value = "END_DATE", dataTypeClass = String.class),
-            @ApiImplicitParam(name = "pageNo", value = "PAGE_NO", dataTypeClass = int.class, example = "1"),
-            @ApiImplicitParam(name = "pageSize", value = "PAGE_SIZE", dataTypeClass = int.class, example = "10")
+    @Operation(summary = "queryRuleListPaging", description = "QUERY_RULE_LIST_PAGING_NOTES")
+    @Parameters({
+            @Parameter(name = "searchVal", description = "SEARCH_VAL", schema = @Schema(implementation = String.class)),
+            @Parameter(name = "ruleType", description = "RULE_TYPE", schema = @Schema(implementation = int.class, example = "1")),
+            @Parameter(name = "startDate", description = "START_DATE", schema = @Schema(implementation = String.class)),
+            @Parameter(name = "endDate", description = "END_DATE", schema = @Schema(implementation = String.class)),
+            @Parameter(name = "pageNo", description = "PAGE_NO", schema = @Schema(implementation = int.class, example = "1")),
+            @Parameter(name = "pageSize", description = "PAGE_SIZE", schema = @Schema(implementation = int.class, example = "10"))
     })
     @GetMapping(value = "/rule/page")
     @ResponseStatus(HttpStatus.OK)
     @ApiException(QUERY_RULE_LIST_PAGING_ERROR)
-    public Result queryRuleListPaging(@ApiIgnore @RequestAttribute(value = Constants.SESSION_USER) User loginUser,
-                                      @RequestParam(value = "searchVal", required = false) String searchVal,
-                                      @RequestParam(value = "ruleType", required = false) Integer ruleType,
-                                      @RequestParam(value = "startDate", required = false) String startTime,
-                                      @RequestParam(value = "endDate", required = false) String endTime,
-                                      @RequestParam("pageNo") Integer pageNo,
-                                      @RequestParam("pageSize") Integer pageSize) {
-        Result result = checkPageParams(pageNo, pageSize);
-        if (!result.checkResult()) {
-            return result;
-        }
+    public Result<PageInfo<DqRule>> queryRuleListPaging(@Parameter(hidden = true) @RequestAttribute(value = Constants.SESSION_USER) User loginUser,
+                                                        @RequestParam(value = "searchVal", required = false) String searchVal,
+                                                        @RequestParam(value = "ruleType", required = false) Integer ruleType,
+                                                        @RequestParam(value = "startDate", required = false) String startTime,
+                                                        @RequestParam(value = "endDate", required = false) String endTime,
+                                                        @RequestParam("pageNo") Integer pageNo,
+                                                        @RequestParam("pageSize") Integer pageSize) {
+        checkPageParams(pageNo, pageSize);
         searchVal = ParameterUtils.handleEscapes(searchVal);
 
-        return dqRuleService.queryRuleListPaging(loginUser, searchVal, ruleType, startTime, endTime, pageNo, pageSize);
+        PageInfo<DqRule> dqRulePageInfo =
+                dqRuleService.queryRuleListPaging(loginUser, searchVal, ruleType, startTime, endTime, pageNo, pageSize);
+        return Result.success(dqRulePageInfo);
     }
 
     /**
      * query all rule list
+     *
      * @return rule list
      */
-    @ApiOperation(value = "queryRuleList", notes = "QUERY_RULE_LIST_NOTES")
+    @Operation(summary = "queryRuleList", description = "QUERY_RULE_LIST_NOTES")
     @GetMapping(value = "/ruleList")
     @ResponseStatus(HttpStatus.OK)
     @ApiException(QUERY_RULE_LIST_ERROR)
-    public Result queryRuleList() {
-        Map<String, Object> result = dqRuleService.queryAllRuleList();
-        return returnDataList(result);
+    public Result<List<DqRule>> queryRuleList() {
+        List<DqRule> dqRules = dqRuleService.queryAllRuleList();
+        return Result.success(dqRules);
     }
 
     /**
@@ -143,36 +146,34 @@ public class DataQualityController extends BaseController {
      * @param pageSize pageSize
      * @return
      */
-    @ApiOperation(value = "queryExecuteResultListPaging", notes = "QUERY_EXECUTE_RESULT_LIST_PAGING_NOTES")
-    @ApiImplicitParams({
-            @ApiImplicitParam(name = "searchVal", value = "SEARCH_VAL", dataTypeClass = String.class),
-            @ApiImplicitParam(name = "ruleType", value = "RULE_TYPE", dataTypeClass = int.class, example = "1"),
-            @ApiImplicitParam(name = "state", value = "STATE", dataTypeClass = int.class, example = "1"),
-            @ApiImplicitParam(name = "startDate", value = "START_DATE", dataTypeClass = String.class),
-            @ApiImplicitParam(name = "endDate", value = "END_DATE", dataTypeClass = String.class),
-            @ApiImplicitParam(name = "pageNo", value = "PAGE_NO", dataTypeClass = int.class, example = "1"),
-            @ApiImplicitParam(name = "pageSize", value = "PAGE_SIZE", dataTypeClass = int.class, example = "10")
+    @Operation(summary = "queryExecuteResultListPaging", description = "QUERY_EXECUTE_RESULT_LIST_PAGING_NOTES")
+    @Parameters({
+            @Parameter(name = "searchVal", description = "SEARCH_VAL", schema = @Schema(implementation = String.class)),
+            @Parameter(name = "ruleType", description = "RULE_TYPE", schema = @Schema(implementation = int.class, example = "1")),
+            @Parameter(name = "state", description = "STATE", schema = @Schema(implementation = int.class, example = "1")),
+            @Parameter(name = "startDate", description = "START_DATE", schema = @Schema(implementation = String.class)),
+            @Parameter(name = "endDate", description = "END_DATE", schema = @Schema(implementation = String.class)),
+            @Parameter(name = "pageNo", description = "PAGE_NO", schema = @Schema(implementation = int.class, example = "1")),
+            @Parameter(name = "pageSize", description = "PAGE_SIZE", schema = @Schema(implementation = int.class, example = "10"))
     })
     @GetMapping(value = "/result/page")
     @ResponseStatus(HttpStatus.OK)
     @ApiException(QUERY_EXECUTE_RESULT_LIST_PAGING_ERROR)
-    public Result queryExecuteResultListPaging(@ApiIgnore @RequestAttribute(value = Constants.SESSION_USER) User loginUser,
-                                               @RequestParam(value = "searchVal", required = false) String searchVal,
-                                               @RequestParam(value = "ruleType", required = false) Integer ruleType,
-                                               @RequestParam(value = "state", required = false) Integer state,
-                                               @RequestParam(value = "startDate", required = false) String startTime,
-                                               @RequestParam(value = "endDate", required = false) String endTime,
-                                               @RequestParam("pageNo") Integer pageNo,
-                                               @RequestParam("pageSize") Integer pageSize) {
+    public Result<PageInfo<DqExecuteResult>> queryExecuteResultListPaging(@Parameter(hidden = true) @RequestAttribute(value = Constants.SESSION_USER) User loginUser,
+                                                                          @RequestParam(value = "searchVal", required = false) String searchVal,
+                                                                          @RequestParam(value = "ruleType", required = false) Integer ruleType,
+                                                                          @RequestParam(value = "state", required = false) Integer state,
+                                                                          @RequestParam(value = "startDate", required = false) String startTime,
+                                                                          @RequestParam(value = "endDate", required = false) String endTime,
+                                                                          @RequestParam("pageNo") Integer pageNo,
+                                                                          @RequestParam("pageSize") Integer pageSize) {
 
-        Result result = checkPageParams(pageNo, pageSize);
-        if (!result.checkResult()) {
-            return result;
-        }
+        checkPageParams(pageNo, pageSize);
         searchVal = ParameterUtils.handleEscapes(searchVal);
 
-        return dqExecuteResultService.queryResultListPaging(loginUser, searchVal, state, ruleType, startTime, endTime,
-                pageNo, pageSize);
+        PageInfo<DqExecuteResult> dqExecuteResultPageInfo = dqExecuteResultService.queryResultListPaging(loginUser,
+                searchVal, state, ruleType, startTime, endTime, pageNo, pageSize);
+        return Result.success(dqExecuteResultPageInfo);
     }
 
     /**
@@ -180,15 +181,15 @@ public class DataQualityController extends BaseController {
      * @param datasourceId datasourceId
      * @return result
      */
-    @ApiOperation(value = "getDatasourceOptionsById", notes = "GET_DATASOURCE_OPTIONS_NOTES")
-    @ApiImplicitParams({
-            @ApiImplicitParam(name = "datasourceId", value = "DATA_SOURCE_ID", dataTypeClass = int.class, example = "1")
+    @Operation(summary = "getDatasourceOptionsById", description = "GET_DATASOURCE_OPTIONS_NOTES")
+    @Parameters({
+            @Parameter(name = "datasourceId", description = "DATA_SOURCE_ID", schema = @Schema(implementation = int.class, example = "1"))
     })
     @GetMapping(value = "/getDatasourceOptionsById")
     @ResponseStatus(HttpStatus.OK)
     @ApiException(GET_DATASOURCE_OPTIONS_ERROR)
-    public Result getDatasourceOptionsById(@RequestParam(value = "datasourceId") int datasourceId) {
-        Map<String, Object> result = dqRuleService.getDatasourceOptionsById(datasourceId);
-        return returnDataList(result);
+    public Result<List<ParamsOptions>> getDatasourceOptionsById(@RequestParam(value = "datasourceId") int datasourceId) {
+        List<ParamsOptions> paramsOptions = dqRuleService.getDatasourceOptionsById(datasourceId);
+        return Result.success(paramsOptions);
     }
 }

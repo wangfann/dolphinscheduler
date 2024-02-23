@@ -17,7 +17,7 @@
 
 import { ref, onMounted, watch } from 'vue'
 import { remove, cloneDeep } from 'lodash'
-import { TaskType } from '@/views/projects/task/constants/task-type'
+import { TaskType } from '@/store/project/types'
 import { formatParams } from '@/views/projects/task/components/node/format-data'
 import { useCellUpdate } from './dag-hooks'
 import type { Ref } from 'vue'
@@ -47,6 +47,7 @@ export function useTaskEdit(options: Options) {
     getSources,
     getTargets,
     setNodeName,
+    setNodeFillColor,
     setNodeEdge
   } = useCellUpdate({
     graph
@@ -167,6 +168,11 @@ export function useTaskEdit(options: Options) {
       processDefinition.value.taskDefinitionList.map((task) => {
         if (task.code === currTask.value?.code) {
           setNodeName(task.code + '', taskDef.name)
+          let fillColor = '#ffffff'
+          if (task.flag === 'YES') {
+            fillColor = 'var(--custom-disable-bg)'
+          }
+          setNodeFillColor(task.code + '', fillColor)
 
           setNodeEdge(String(task.code), data.preTasks)
           updatePreTasks(data.preTasks, task.code)

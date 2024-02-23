@@ -17,9 +17,12 @@
 
 package org.apache.dolphinscheduler.plugin.task.api;
 
+import org.apache.dolphinscheduler.common.constants.DateConstants;
+
 import java.time.Duration;
-import java.util.Arrays;
-import java.util.List;
+import java.util.Set;
+
+import com.google.common.collect.Sets;
 
 public class TaskConstants {
 
@@ -30,13 +33,6 @@ public class TaskConstants {
     public static final String YARN_APPLICATION_REGEX = "application_\\d+_\\d+";
 
     public static final String FLINK_APPLICATION_REGEX = "JobID \\w+";
-
-    public static final String SETVALUE_REGEX = "[\\$#]\\{setValue\\(([^)]*)\\)}";
-
-    /**
-     * string false
-     */
-    public static final String STRING_FALSE = "false";
 
     /**
      * exit code kill
@@ -53,6 +49,11 @@ public class TaskConstants {
      * comma ,
      */
     public static final String COMMA = ",";
+
+    /**
+     * hyphen
+     */
+    public static final String HYPHEN = "-";
 
     /**
      * slash /
@@ -128,11 +129,6 @@ public class TaskConstants {
     public static final String SH = "sh";
 
     /**
-     * default log cache rows num,output when reach the number
-     */
-    public static final int DEFAULT_LOG_ROWS_NUM = 4 * 16;
-
-    /**
      * log flush interval?output when reach the interval
      */
     public static final int DEFAULT_LOG_FLUSH_INTERVAL = 1000;
@@ -143,36 +139,6 @@ public class TaskConstants {
     public static final String PSTREE = "pstree";
 
     public static final String RWXR_XR_X = "rwxr-xr-x";
-
-    /**
-     * task log info format
-     */
-    public static final String TASK_LOG_LOGGER_NAME = "TaskLogLogger";
-
-    /**
-     * task log logger name format
-     */
-    public static final String TASK_LOG_LOGGER_NAME_FORMAT = TASK_LOG_LOGGER_NAME + "-%s";
-
-    /**
-     * Task Logger's prefix
-     */
-    public static final String TASK_LOGGER_INFO_PREFIX = "TASK";
-
-    /**
-     * Task Logger Thread's name
-     */
-    public static final String TASK_APPID_LOG_FORMAT = "taskAppId";
-
-    /**
-     * get output log service
-     */
-    public static final String GET_OUTPUT_LOG_SERVICE = "-getOutputLogService";
-
-    /**
-     * date format of yyyyMMdd
-     */
-    public static final String PARAMETER_FORMAT_DATE = "yyyyMMdd";
 
     /**
      * date format of yyyyMMddHHmmss
@@ -188,17 +154,17 @@ public class TaskConstants {
     /**
      * system date(yyyyMMddHHmmss)
      */
-    public static final String PARAMETER_DATETIME = "system.datetime";
+    public static final String PARAMETER_DATETIME = DateConstants.PARAMETER_DATETIME;
 
     /**
      * system date(yyyymmdd) today
      */
-    public static final String PARAMETER_CURRENT_DATE = "system.biz.curdate";
+    public static final String PARAMETER_CURRENT_DATE = DateConstants.PARAMETER_CURRENT_DATE;
 
     /**
      * system date(yyyymmdd) yesterday
      */
-    public static final String PARAMETER_BUSINESS_DATE = "system.biz.date";
+    public static final String PARAMETER_BUSINESS_DATE = DateConstants.PARAMETER_BUSINESS_DATE;
 
     /**
      * the absolute path of current executing task
@@ -210,6 +176,40 @@ public class TaskConstants {
      */
     public static final String PARAMETER_TASK_INSTANCE_ID = "system.task.instance.id";
 
+    /**
+     * the definition code of current task
+     */
+    public static final String PARAMETER_TASK_DEFINITION_CODE = "system.task.definition.code";
+
+    /**
+     * the definition name of current task
+     */
+    public static final String PARAMETER_TASK_DEFINITION_NAME = "system.task.definition.name";
+
+    /**
+     * the instance id of the workflow to which current task belongs
+     */
+    public static final String PARAMETER_WORKFLOW_INSTANCE_ID = "system.workflow.instance.id";
+
+    /**
+     * the definition code of the workflow to which current task belongs
+     */
+    public static final String PARAMETER_WORKFLOW_DEFINITION_CODE = "system.workflow.definition.code";
+
+    /**
+     * the definition name of the workflow to which current task belongs
+     */
+    public static final String PARAMETER_WORKFLOW_DEFINITION_NAME = "system.workflow.definition.name";
+
+    /**
+     * the code of the project to which current task belongs
+     */
+    public static final String PARAMETER_PROJECT_CODE = "system.project.code";
+
+    /**
+     * the name of the project to which current task belongs
+     */
+    public static final String PARAMETER_PROJECT_NAME = "system.project.name";
     /**
      * month_begin
      */
@@ -231,6 +231,39 @@ public class TaskConstants {
      */
     public static final String WEEK_END = "week_end";
     /**
+     * this_day
+     */
+    public static final String THIS_DAY = "this_day";
+    /**
+     * last_day
+     */
+    public static final String LAST_DAY = "last_day";
+
+    /**
+     * month_first_day
+     */
+    public static final String MONTH_FIRST_DAY = "month_first_day";
+
+    /**
+     * month_last_day
+     */
+    public static final String MONTH_LAST_DAY = "month_last_day";
+
+    /**
+     * week_first_day
+     */
+    public static final String WEEK_FIRST_DAY = "week_first_day";
+
+    /**
+     * week_last_day
+     */
+    public static final String WEEK_LAST_DAY = "week_last_day";
+
+    /**
+     * year_week
+     */
+    public static final String YEAR_WEEK = "year_week";
+    /**
      * timestamp
      */
     public static final String TIMESTAMP = "timestamp";
@@ -247,22 +280,9 @@ public class TaskConstants {
     public static final char P = 'P';
     public static final char N = 'N';
     public static final String SUBTRACT_STRING = "-";
-    public static final String GLOBAL_PARAMS = "globalParams";
-    public static final String LOCAL_PARAMS = "localParams";
     public static final String LOCAL_PARAMS_LIST = "localParamsList";
-    public static final String SUBPROCESS_INSTANCE_ID = "subProcessInstanceId";
-    public static final String PROCESS_INSTANCE_STATE = "processInstanceState";
-    public static final String PARENT_WORKFLOW_INSTANCE = "parentWorkflowInstance";
-    public static final String CONDITION_RESULT = "conditionResult";
-    public static final String SWITCH_RESULT = "switchResult";
-    public static final String DEPENDENCE = "dependence";
     public static final String TASK_TYPE = "taskType";
-    public static final String TASK_LIST = "taskList";
     public static final String QUEUE = "queue";
-    public static final String QUEUE_NAME = "queueName";
-    public static final int LOG_QUERY_SKIP_LINE_NUMBER = 0;
-    public static final int LOG_QUERY_LIMIT = 4096;
-
     /**
      * default display rows
      */
@@ -284,41 +304,11 @@ public class TaskConstants {
     public static final String D = "-D";
 
     /**
-     * jdbc url
-     */
-    public static final String JDBC_MYSQL = "jdbc:mysql://";
-    public static final String JDBC_POSTGRESQL = "jdbc:postgresql://";
-    public static final String JDBC_HIVE_2 = "jdbc:hive2://";
-    public static final String JDBC_CLICKHOUSE = "jdbc:clickhouse://";
-    public static final String JDBC_ORACLE_SID = "jdbc:oracle:thin:@";
-    public static final String JDBC_ORACLE_SERVICE_NAME = "jdbc:oracle:thin:@//";
-    public static final String JDBC_SQLSERVER = "jdbc:sqlserver://";
-    public static final String JDBC_DB2 = "jdbc:db2://";
-    public static final String JDBC_PRESTO = "jdbc:presto://";
-
-    /**
-     * driver
-     */
-    public static final String ORG_POSTGRESQL_DRIVER = "org.postgresql.Driver";
-    public static final String COM_MYSQL_CJ_JDBC_DRIVER = "com.mysql.cj.jdbc.Driver";
-    public static final String ORG_APACHE_HIVE_JDBC_HIVE_DRIVER = "org.apache.hive.jdbc.HiveDriver";
-    public static final String COM_CLICKHOUSE_JDBC_DRIVER = "ru.yandex.clickhouse.ClickHouseDriver";
-    public static final String COM_ORACLE_JDBC_DRIVER = "oracle.jdbc.driver.OracleDriver";
-    public static final String COM_SQLSERVER_JDBC_DRIVER = "com.microsoft.sqlserver.jdbc.SQLServerDriver";
-    public static final String COM_DB2_JDBC_DRIVER = "com.ibm.db2.jcc.DB2Driver";
-    public static final String COM_PRESTO_JDBC_DRIVER = "com.facebook.presto.jdbc.PrestoDriver";
-
-    /**
      * datasource encryption salt
      */
     public static final String DATASOURCE_ENCRYPTION_SALT_DEFAULT = "!@#$%^&*";
     public static final String DATASOURCE_ENCRYPTION_ENABLE = "datasource.encryption.enable";
     public static final String DATASOURCE_ENCRYPTION_SALT = "datasource.encryption.salt";
-
-    /**
-     * resource storage type
-     */
-   // public static final String RESOURCE_STORAGE_TYPE = "resource.storage.type";
 
     /**
      * kerberos
@@ -350,7 +340,6 @@ public class TaskConstants {
      */
     public static final String LOGIN_USER_KEY_TAB_PATH = "login.user.keytab.path";
 
-
     /**
      * hadoop.security.authentication
      */
@@ -359,12 +348,8 @@ public class TaskConstants {
     /**
      * hadoop.security.authentication
      */
-    public static final String HADOOP_SECURITY_AUTHENTICATION_STARTUP_STATE = "hadoop.security.authentication.startup.state";
-
-    /**
-     * Task Logger Thread's name
-     */
-    public static final String TASK_LOGGER_THREAD_NAME = "TaskLogInfo";
+    public static final String HADOOP_SECURITY_AUTHENTICATION_STARTUP_STATE =
+            "hadoop.security.authentication.startup.state";
 
     /**
      * hdfs/s3 configuration
@@ -373,14 +358,9 @@ public class TaskConstants {
     public static final String RESOURCE_UPLOAD_PATH = "resource.storage.upload.base.path";
 
     /**
-     * data.quality.jar.name
+     * data.quality.jar.dir
      */
-    public static final String DATA_QUALITY_JAR_NAME = "data-quality.jar.name";
-
-    /**
-     * data.quality.error.output.path
-     */
-    public static final String DATA_QUALITY_ERROR_OUTPUT_PATH = "data-quality.error.output.path";
+    public static final String DATA_QUALITY_JAR_DIR = "data-quality.jar.dir";
 
     public static final String TASK_TYPE_CONDITIONS = "CONDITIONS";
 
@@ -388,19 +368,26 @@ public class TaskConstants {
 
     public static final String TASK_TYPE_SUB_PROCESS = "SUB_PROCESS";
 
+    public static final String TASK_TYPE_DYNAMIC = "DYNAMIC";
+
     public static final String TASK_TYPE_DEPENDENT = "DEPENDENT";
 
     public static final String TASK_TYPE_SQL = "SQL";
 
     public static final String TASK_TYPE_DATA_QUALITY = "DATA_QUALITY";
 
-    public static final String TASK_TYPE_K8S = "K8S";
+    public static final Set<String> TASK_TYPE_SET_K8S = Sets.newHashSet("K8S", "KUBEFLOW");
 
     public static final String TASK_TYPE_BLOCKING = "BLOCKING";
 
-    public static final String TASK_TYPE_STREAM = "STREAM";
-
-    public static final List<String> COMPLEX_TASK_TYPES = Arrays.asList(new String[]{TASK_TYPE_CONDITIONS, TASK_TYPE_SWITCH, TASK_TYPE_SUB_PROCESS, TASK_TYPE_DEPENDENT});
+    /**
+     * azure config
+     */
+    public static final String AZURE_CLIENT_ID = "resource.azure.client.id";
+    public static final String AZURE_CLIENT_SECRET = "resource.azure.client.secret";
+    public static final String AZURE_ACCESS_SUB_ID = "resource.azure.subId";
+    public static final String AZURE_SECRET_TENANT_ID = "resource.azure.tenant.id";
+    public static final String QUERY_INTERVAL = "resource.query.interval";
 
     /**
      * aws config
@@ -410,22 +397,39 @@ public class TaskConstants {
     public static final String AWS_REGION = "resource.aws.region";
 
     /**
+     * alibaba cloud config
+     */
+    public static final String ALIBABA_CLOUD_ACCESS_KEY_ID = "resource.alibaba.cloud.access.key.id";
+    public static final String ALIBABA_CLOUD_ACCESS_KEY_SECRET = "resource.alibaba.cloud.access.key.secret";
+    public static final String ALIBABA_CLOUD_REGION = "resource.alibaba.cloud.region";
+
+    /**
+     * huawei cloud config
+     */
+    public static final String HUAWEI_CLOUD_ACCESS_KEY_ID = "resource.huawei.cloud.access.key.id";
+    public static final String HUAWEI_CLOUD_ACCESS_KEY_SECRET = "resource.huawei.cloud.access.key.secret";
+
+    /**
      * use for k8s task
      */
     public static final String API_VERSION = "batch/v1";
-    public static final String IMAGE_PULL_POLICY = "Always";
     public static final String RESTART_POLICY = "Never";
     public static final String MEMORY = "memory";
     public static final String CPU = "cpu";
     public static final String LAYER_LABEL = "k8s.cn/layer";
     public static final String LAYER_LABEL_VALUE = "batch";
     public static final String NAME_LABEL = "k8s.cn/name";
-    public static final String  TASK_INSTANCE_ID = "taskInstanceId";
+    public static final String TASK_INSTANCE_ID = "taskInstanceId";
     public static final String MI = "Mi";
     public static final int JOB_TTL_SECONDS = 300;
     public static final int LOG_LINES = 500;
     public static final String NAMESPACE_NAME = "name";
     public static final String CLUSTER = "cluster";
+
+    /**
+     * spark / flink on k8s label name
+     */
+    public static final String UNIQUE_LABEL_NAME = "dolphinscheduler-label";
 
     /**
      * conda config used by jupyter task plugin

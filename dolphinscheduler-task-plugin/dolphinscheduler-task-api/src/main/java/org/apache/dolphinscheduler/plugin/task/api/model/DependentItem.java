@@ -17,9 +17,10 @@
 
 package org.apache.dolphinscheduler.plugin.task.api.model;
 
-import lombok.Data;
 import org.apache.dolphinscheduler.plugin.task.api.enums.DependResult;
 import org.apache.dolphinscheduler.plugin.task.api.enums.TaskExecutionStatus;
+
+import lombok.Data;
 
 /**
  * dependent item
@@ -34,6 +35,7 @@ public class DependentItem {
     private String dateValue;
     private DependResult dependResult;
     private TaskExecutionStatus status;
+    private Boolean parameterPassing;
 
     public String getKey() {
         return String.format("%d-%d-%s-%s",

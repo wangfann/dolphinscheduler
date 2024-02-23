@@ -17,9 +17,6 @@
 
 package org.apache.dolphinscheduler.dao.entity;
 
-import lombok.Data;
-import lombok.NoArgsConstructor;
-
 import org.apache.dolphinscheduler.common.enums.CommandType;
 import org.apache.dolphinscheduler.common.enums.FailureStrategy;
 import org.apache.dolphinscheduler.common.enums.Flag;
@@ -28,9 +25,19 @@ import org.apache.dolphinscheduler.common.enums.TaskDependType;
 import org.apache.dolphinscheduler.common.enums.WarningType;
 import org.apache.dolphinscheduler.common.enums.WorkflowExecutionStatus;
 import org.apache.dolphinscheduler.common.utils.DateUtils;
+import org.apache.dolphinscheduler.common.utils.JSONUtils;
 
+import org.apache.commons.lang3.StringUtils;
+
+import java.util.ArrayList;
 import java.util.Date;
+import java.util.List;
 
+import lombok.AllArgsConstructor;
+import lombok.Data;
+import lombok.NoArgsConstructor;
+
+import com.baomidou.mybatisplus.annotation.FieldStrategy;
 import com.baomidou.mybatisplus.annotation.IdType;
 import com.baomidou.mybatisplus.annotation.TableField;
 import com.baomidou.mybatisplus.annotation.TableId;
@@ -49,99 +56,57 @@ public class ProcessInstance {
      * id
      */
     @TableId(value = "id", type = IdType.AUTO)
-    private int id;
+    private Integer id;
 
-    /**
-     * process definition code
-     */
     private Long processDefinitionCode;
 
-    /**
-     * process definition version
-     */
     private int processDefinitionVersion;
 
-    /**
-     * process state
-     */
+    private Long projectCode;
+
     private WorkflowExecutionStatus state;
+
+    private String stateHistory;
+
+    /**
+     * state desc list from state history
+     */
+    @TableField(exist = false)
+    private List<StateDesc> stateDescList;
+
     /**
      * recovery flag for failover
      */
     private Flag recovery;
-    /**
-     * start time
-     */
     private Date startTime;
 
-    /**
-     * end time
-     */
+    @TableField(updateStrategy = FieldStrategy.IGNORED)
     private Date endTime;
 
-    /**
-     * run time
-     */
     private int runTimes;
 
-    /**
-     * name
-     */
     private String name;
 
-    /**
-     * host
-     */
     private String host;
 
-    /**
-     * process definition structure
-     */
     @TableField(exist = false)
     private ProcessDefinition processDefinition;
-    /**
-     * process command type
-     */
     private CommandType commandType;
 
-    /**
-     * command parameters
-     */
     private String commandParam;
 
-    /**
-     * node depend type
-     */
     private TaskDependType taskDependType;
 
-    /**
-     * task max try times
-     */
     private int maxTryTimes;
 
-    /**
-     * failure strategy when task failed.
-     */
     private FailureStrategy failureStrategy;
 
-    /**
-     * warning type
-     */
     private WarningType warningType;
 
-    /**
-     * warning group
-     */
     private Integer warningGroupId;
 
-    /**
-     * schedule time
-     */
     private Date scheduleTime;
 
-    /**
-     * command start time
-     */
     private Date commandStartTime;
 
     /**
@@ -155,21 +120,10 @@ public class ProcessInstance {
     @TableField(exist = false)
     private DagData dagData;
 
-    /**
-     * executor id
-     */
     private int executorId;
 
-    /**
-     * executor name
-     */
-    @TableField(exist = false)
     private String executorName;
 
-    /**
-     * tenant code
-     */
-    @TableField(exist = false)
     private String tenantCode;
 
     /**
@@ -229,11 +183,6 @@ public class ProcessInstance {
     private int timeout;
 
     /**
-     * tenant id
-     */
-    private int tenantId;
-
-    /**
      * varPool string
      */
     private String varPool;
@@ -257,6 +206,11 @@ public class ProcessInstance {
      */
     @TableField(exist = false)
     private boolean isBlocked;
+
+    /**
+     * test flag
+     */
+    private int testFlag;
 
     /**
      * set the process name with process define version and timestamp
@@ -310,4 +264,29 @@ public class ProcessInstance {
         return commandType;
     }
 
+    /**
+     * set state with desc
+     * @param state
+     * @param stateDesc
+     */
+    public void setStateWithDesc(WorkflowExecutionStatus state, String stateDesc) {
+        this.setState(state);
+        if (StringUtils.isEmpty(this.getStateHistory())) {
+            stateDescList = new ArrayList<>();
+        } else if (stateDescList == null) {
+            stateDescList = JSONUtils.toList(this.getStateHistory(), StateDesc.class);
+        }
+        stateDescList.add(new StateDesc(new Date(), state, stateDesc));
+        this.setStateHistory(JSONUtils.toJsonString(stateDescList));
+    }
+
+    @Data
+    @NoArgsConstructor
+    @AllArgsConstructor
+    public static class StateDesc {
+
+        Date time;
+        WorkflowExecutionStatus state;
+        String desc;
+    }
 }

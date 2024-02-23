@@ -25,6 +25,7 @@ import lombok.Getter;
 import org.apache.dolphinscheduler.e2e.pages.common.NavBarPage;
 
 import java.security.Key;
+import java.time.Duration;
 import java.util.List;
 
 import org.openqa.selenium.By;
@@ -56,6 +57,11 @@ public class DataSourcePage extends NavBarPage implements NavBarPage.NavBarItem 
     })
     private WebElement buttonConfirm;
 
+    @FindBys({
+        @FindBy(className = "dialog-source-modal"),
+    })
+    private WebElement dataSourceModal;
+
     private final CreateDataSourceForm createDataSourceForm;
 
     public DataSourcePage(RemoteWebDriver driver) {
@@ -68,19 +74,12 @@ public class DataSourcePage extends NavBarPage implements NavBarPage.NavBarItem 
                                            String jdbcParams) {
         buttonCreateDataSource().click();
 
-        new WebDriverWait(driver, 10).until(ExpectedConditions.visibilityOfElementLocated(
-            new By.ByClassName("dialog-create-data-source")));
+        new WebDriverWait(driver, Duration.ofSeconds(10)).until(ExpectedConditions.visibilityOfElementLocated(
+            new By.ByClassName("dialog-source-modal")));
 
-        createDataSourceForm().btnDataSourceTypeDropdown().click();
+        dataSourceModal().findElement(By.className(dataSourceType.toUpperCase()+"-box")).click();
 
-        new WebDriverWait(driver, 10).until(ExpectedConditions.textToBePresentInElement(driver.findElement(By.className("dialog-create-data-source")), dataSourceType.toUpperCase()));
-
-        createDataSourceForm().selectDataSourceType()
-            .stream()
-            .filter(it -> it.getText().contains(dataSourceType.toUpperCase()))
-            .findFirst()
-            .orElseThrow(() -> new RuntimeException(String.format("No %s in data source type list", dataSourceType.toUpperCase())))
-            .click();
+        new WebDriverWait(driver, Duration.ofSeconds(10)).until(ExpectedConditions.textToBePresentInElement(driver.findElement(By.className("dialog-create-data-source")), dataSourceType.toUpperCase()));
 
         createDataSourceForm().inputDataSourceName().sendKeys(dataSourceName);
         createDataSourceForm().inputDataSourceDescription().sendKeys(dataSourceDescription);
@@ -187,5 +186,18 @@ public class DataSourcePage extends NavBarPage implements NavBarPage.NavBarItem 
 
         @FindBy(className = "btn-test-connection")
         private WebElement btnTestConnection;
+
+        @FindBys({
+                @FindBy(className = "input-zeppelin_rest_endpoint"),
+                @FindBy(tagName = "input"),
+        })
+        private WebElement inputZeppelinRestEndpoint;
+
+        @FindBys({
+                @FindBy(className = "input-kubeConfig"),
+                @FindBy(tagName = "textarea"),
+        })
+        private WebElement inputKubeConfig;
+
     }
 }

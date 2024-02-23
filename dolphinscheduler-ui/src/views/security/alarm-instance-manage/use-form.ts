@@ -24,7 +24,7 @@ import {
 import type {
   IPluginId,
   IPlugin,
-  FormRules,
+  IFormRules,
   IMeta,
   IJsonItem,
   IRecord
@@ -35,7 +35,9 @@ export function useForm() {
 
   const initialValues = {
     instanceName: '',
-    pluginDefineId: null
+    pluginDefineId: null,
+    instanceType: 'NORMAL',
+    warningType: 'ALL'
   }
 
   const state = reactive({
@@ -44,7 +46,7 @@ export function useForm() {
     uiPlugins: [],
     pluginsLoading: false,
     json: []
-  } as { detailFormRef: Ref; json: IJsonItem[]; detailForm: { instanceName: string; pluginDefineId: number | null }; pluginsLoading: boolean; uiPlugins: [] })
+  } as { detailFormRef: Ref; json: IJsonItem[]; detailForm: { instanceName: string; pluginDefineId: number | null; instanceType: string; warningType: string }; pluginsLoading: boolean; uiPlugins: [] })
 
   const meta = {
     model: state.detailForm,
@@ -60,13 +62,13 @@ export function useForm() {
       pluginDefineId: {
         trigger: ['blur', 'change'],
         required: true,
-        validator(validte, value) {
+        validator(unused: any, value: number) {
           if (!value && value !== 0) {
             return new Error(t('security.alarm_instance.select_plugin_tips'))
           }
         }
       }
-    } as FormRules
+    } as IFormRules
   } as IMeta
 
   const getUiPluginsByType = async () => {
@@ -109,6 +111,8 @@ export function useForm() {
   const setDetail = (record: IRecord) => {
     state.detailForm.instanceName = record.instanceName
     state.detailForm.pluginDefineId = record.pluginDefineId
+    state.detailForm.instanceType = record.instanceType
+    state.detailForm.warningType = record.warningType
     if (record.pluginInstanceParams)
       state.json = JSON.parse(record.pluginInstanceParams)
   }

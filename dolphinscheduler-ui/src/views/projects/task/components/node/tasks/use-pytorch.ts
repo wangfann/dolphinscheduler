@@ -45,7 +45,7 @@ export function usePytorch({
     timeout: 30,
     timeoutNotifyStrategy: ['WARN'],
     pythonEnvTool: 'conda',
-    pythonCommand: '${PYTHON_HOME}',
+    pythonCommand: '${PYTHON_LAUNCHER}',
     condaPythonVersion: '3.7',
     requirements: 'requirements.txt',
     pythonPath: '.'
@@ -70,10 +70,11 @@ export function usePytorch({
       Fields.useName(from),
       ...extra,
       Fields.useRunFlag(),
+      Fields.useCache(),
       Fields.useDescription(),
       Fields.useTaskPriority(),
-      Fields.useWorkerGroup(),
-      Fields.useEnvironmentName(model, !model.id),
+      Fields.useWorkerGroup(projectCode),
+      Fields.useEnvironmentName(model, !data?.id),
       ...Fields.useTaskGroup(model, projectCode),
       ...Fields.useFailed(),
       ...Fields.useResourceLimit(),
@@ -85,4 +86,3 @@ export function usePytorch({
     model
   }
 }
-

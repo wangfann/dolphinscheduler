@@ -17,23 +17,27 @@
 
 package org.apache.dolphinscheduler.plugin.task.pytorch;
 
-import org.apache.dolphinscheduler.plugin.task.api.AbstractTaskExecutor;
+import org.apache.dolphinscheduler.common.utils.JSONUtils;
+import org.apache.dolphinscheduler.plugin.task.api.AbstractTask;
 import org.apache.dolphinscheduler.plugin.task.api.ShellCommandExecutor;
+import org.apache.dolphinscheduler.plugin.task.api.TaskCallBack;
 import org.apache.dolphinscheduler.plugin.task.api.TaskConstants;
 import org.apache.dolphinscheduler.plugin.task.api.TaskException;
 import org.apache.dolphinscheduler.plugin.task.api.TaskExecutionContext;
-import org.apache.dolphinscheduler.plugin.task.api.model.Property;
 import org.apache.dolphinscheduler.plugin.task.api.model.TaskResponse;
 import org.apache.dolphinscheduler.plugin.task.api.parameters.AbstractParameters;
-import org.apache.dolphinscheduler.plugin.task.api.parser.ParamUtils;
-import org.apache.dolphinscheduler.plugin.task.api.parser.ParameterUtils;
-import org.apache.dolphinscheduler.spi.utils.JSONUtils;
+import org.apache.dolphinscheduler.plugin.task.api.shell.IShellInterceptorBuilder;
+import org.apache.dolphinscheduler.plugin.task.api.shell.ShellInterceptorBuilderFactory;
+import org.apache.dolphinscheduler.plugin.task.api.utils.ParameterUtils;
 
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Map;
+import java.util.stream.Collectors;
 
-public class PytorchTask extends AbstractTaskExecutor {
+import lombok.extern.slf4j.Slf4j;
+
+@Slf4j
+public class PytorchTask extends AbstractTask {
 
     private final ShellCommandExecutor shellCommandExecutor;
     protected PytorchParameters pytorchParameters;
@@ -44,18 +48,16 @@ public class PytorchTask extends AbstractTaskExecutor {
         super(taskExecutionContext);
         this.taskExecutionContext = taskExecutionContext;
 
-        this.shellCommandExecutor = new ShellCommandExecutor(this::logHandle,
-            taskExecutionContext,
-            logger);
+        this.shellCommandExecutor = new ShellCommandExecutor(this::logHandle, taskExecutionContext);
     }
 
     @Override
     public void init() {
-        logger.info("python task params {}", taskExecutionContext.getTaskParams());
 
         pytorchParameters = JSONUtils.parseObject(taskExecutionContext.getTaskParams(), PytorchParameters.class);
+        log.info("Initialize pytorch task params {}", JSONUtils.toPrettyJsonString(taskExecutionContext));
 
-        if (!pytorchParameters.checkParameters()) {
+        if (pytorchParameters == null || !pytorchParameters.checkParameters()) {
             throw new TaskException("python task params is not valid");
         }
 
@@ -64,21 +66,33 @@ public class PytorchTask extends AbstractTaskExecutor {
         pythonEnvManager.setCondaPythonVersion(pytorchParameters.getCondaPythonVersion());
     }
 
+    @SuppressWarnings("unchecked")
     @Override
-    public void handle() throws Exception {
+    public void handle(TaskCallBack taskCallBack) throws TaskException {
         try {
-            String command = buildPythonExecuteCommand();
-            TaskResponse taskResponse = shellCommandExecutor.run(command);
+            IShellInterceptorBuilder<?, ?> shellActuatorBuilder = ShellInterceptorBuilderFactory.newBuilder()
+                    .properties(ParameterUtils.convert(taskExecutionContext.getPrepareParamsMap()))
+                    .appendScript(buildPythonExecuteCommand());
+
+            TaskResponse taskResponse = shellCommandExecutor.run(shellActuatorBuilder, taskCallBack);
             setExitStatusCode(taskResponse.getExitStatusCode());
-            setAppIds(taskResponse.getAppIds());
             setProcessId(taskResponse.getProcessId());
-            setVarPool(shellCommandExecutor.getVarPool());
+            setTaskOutputParams(shellCommandExecutor.getTaskOutputParams());
+        } catch (InterruptedException e) {
+            Thread.currentThread().interrupt();
+            log.error("The current Pytorch task has been interrupted", e);
+            setExitStatusCode(TaskConstants.EXIT_CODE_FAILURE);
+            throw new TaskException("The current Pytorch task has been interrupted", e);
         } catch (Exception e) {
             setExitStatusCode(TaskConstants.EXIT_CODE_FAILURE);
-            throw e;
+            throw new TaskException("Pytorch task execute failed", e);
         }
     }
 
+    @Override
+    public void cancel() throws TaskException {
+
+    }
 
     public String buildPythonExecuteCommand() throws Exception {
         List<String> args = new ArrayList<>();
@@ -102,14 +116,13 @@ public class PytorchTask extends AbstractTaskExecutor {
 
         String scriptParams = pytorchParameters.getScriptParams();
         if (scriptParams != null && !scriptParams.isEmpty()) {
-            args.add(String.format("%s %s %s", getPythonCommand(), pytorchParameters.getScriptPath(), pytorchParameters.getScriptParams()));
+            args.add(String.format("%s %s %s", getPythonCommand(), pytorchParameters.getScriptPath(),
+                    pytorchParameters.getScriptParams()));
         } else {
             args.add(String.format("%s %s", getPythonCommand(), pytorchParameters.getScriptPath()));
 
         }
-
-        Map<String, Property> paramsMap = taskExecutionContext.getPrepareParamsMap();
-        return ParameterUtils.convertParameterPlaceholders(String.join("\n", args), ParamUtils.convert(paramsMap));
+        return args.stream().collect(Collectors.joining("\n"));
     }
 
     private String getPythonCommand() {
@@ -117,16 +130,14 @@ public class PytorchTask extends AbstractTaskExecutor {
         if (pytorchParameters.getIsCreateEnvironment()) {
             pythonCommand = pythonEnvManager.getPythonCommand();
         } else {
-            pythonCommand = pytorchParameters.getPythonCommand();
+            pythonCommand = pytorchParameters.getPythonLauncher();
         }
         return pythonCommand;
 
     }
-
 
     @Override
     public AbstractParameters getParameters() {
         return pytorchParameters;
     }
 }
-

@@ -207,7 +207,7 @@ CREATE TABLE t_ds_access_token (
 DROP TABLE IF EXISTS t_ds_alert;
 CREATE TABLE t_ds_alert (
   id int NOT NULL  ,
-  title varchar(64) DEFAULT NULL ,
+  title varchar(512) DEFAULT NULL ,
   sign varchar(40) NOT NULL DEFAULT '',
   content text ,
   alert_status int DEFAULT '0' ,
@@ -263,11 +263,13 @@ CREATE TABLE t_ds_command (
   executor_id               int DEFAULT NULL ,
   update_time               timestamp DEFAULT NULL ,
   process_instance_priority int DEFAULT '2' ,
-  worker_group              varchar(64),
+  worker_group              varchar(255),
+  tenant_code               varchar(64) DEFAULT 'default',
   environment_code          bigint DEFAULT '-1',
   dry_run                   int DEFAULT '0' ,
   process_instance_id       int DEFAULT 0,
   process_definition_version int DEFAULT 0,
+  test_flag                 int DEFAULT NULL ,
   PRIMARY KEY (id)
 ) ;
 
@@ -310,12 +312,14 @@ CREATE TABLE t_ds_error_command (
   executor_id               int DEFAULT NULL ,
   update_time               timestamp DEFAULT NULL ,
   process_instance_priority int DEFAULT '2' ,
-  worker_group              varchar(64),
+  worker_group              varchar(255),
+  tenant_code               varchar(64) DEFAULT 'default',
   environment_code          bigint DEFAULT '-1',
   dry_run                   int DEFAULT '0' ,
   message                   text ,
   process_instance_id       int DEFAULT 0,
   process_definition_version int DEFAULT 0,
+  test_flag                 int DEFAULT NULL ,
   PRIMARY KEY (id)
 );
 
@@ -328,7 +332,7 @@ CREATE TABLE t_ds_process_definition (
   id int NOT NULL  ,
   code bigint NOT NULL,
   name varchar(255) DEFAULT NULL ,
-  version int NOT NULL ,
+  version int NOT NULL DEFAULT 1,
   description text ,
   project_code bigint DEFAULT NULL ,
   release_state int DEFAULT NULL ,
@@ -338,7 +342,6 @@ CREATE TABLE t_ds_process_definition (
   warning_group_id int DEFAULT NULL ,
   flag int DEFAULT NULL ,
   timeout int DEFAULT '0' ,
-  tenant_id int DEFAULT '-1' ,
   execution_type int DEFAULT '0',
   create_time timestamp DEFAULT NULL ,
   update_time timestamp DEFAULT NULL ,
@@ -357,7 +360,7 @@ CREATE TABLE t_ds_process_definition_log (
   id int NOT NULL  ,
   code bigint NOT NULL,
   name varchar(255) DEFAULT NULL ,
-  version int NOT NULL ,
+  version int NOT NULL DEFAULT '1',
   description text ,
   project_code bigint DEFAULT NULL ,
   release_state int DEFAULT NULL ,
@@ -367,7 +370,6 @@ CREATE TABLE t_ds_process_definition_log (
   warning_group_id int DEFAULT NULL ,
   flag int DEFAULT NULL ,
   timeout int DEFAULT '0' ,
-  tenant_id int DEFAULT '-1' ,
   execution_type int DEFAULT '0',
   operator int DEFAULT NULL ,
   operate_time timestamp DEFAULT NULL ,
@@ -375,6 +377,8 @@ CREATE TABLE t_ds_process_definition_log (
   update_time timestamp DEFAULT NULL ,
   PRIMARY KEY (id)
 ) ;
+
+create UNIQUE index uniq_idx_code_version on t_ds_process_definition_log (code,version);
 
 --
 -- Table structure for table t_ds_task_definition
@@ -385,7 +389,7 @@ CREATE TABLE t_ds_task_definition (
   id int NOT NULL  ,
   code bigint NOT NULL,
   name varchar(255) DEFAULT NULL ,
-  version int NOT NULL ,
+  version int NOT NULL DEFAULT '1',
   description text ,
   project_code bigint DEFAULT NULL ,
   user_id int DEFAULT NULL ,
@@ -393,6 +397,7 @@ CREATE TABLE t_ds_task_definition (
   task_execute_type int DEFAULT '0',
   task_params text ,
   flag int DEFAULT NULL ,
+  is_cache int DEFAULT '0',
   task_priority int DEFAULT '2' ,
   worker_group varchar(255) DEFAULT NULL ,
   environment_code bigint DEFAULT '-1',
@@ -423,14 +428,15 @@ CREATE TABLE t_ds_task_definition_log (
   id int NOT NULL  ,
   code bigint NOT NULL,
   name varchar(255) DEFAULT NULL ,
-  version int NOT NULL ,
+  version int NOT NULL DEFAULT '1',
   description text ,
   project_code bigint DEFAULT NULL ,
   user_id int DEFAULT NULL ,
   task_type varchar(50) DEFAULT NULL ,
-  task_execute_type int(11) DEFAULT '0',
+  task_execute_type int DEFAULT '0',
   task_params text ,
   flag int DEFAULT NULL ,
+  is_cache int DEFAULT '0' ,
   task_priority int DEFAULT '2' ,
   worker_group varchar(255) DEFAULT NULL ,
   environment_code bigint DEFAULT '-1',
@@ -516,8 +522,10 @@ CREATE TABLE t_ds_process_instance (
   id int NOT NULL  ,
   name varchar(255) DEFAULT NULL ,
   process_definition_code bigint DEFAULT NULL ,
-  process_definition_version int DEFAULT NULL ,
+  process_definition_version int NOT NULL DEFAULT 1 ,
+  project_code bigint DEFAULT NULL ,
   state int DEFAULT NULL ,
+  state_history text,
   recovery int DEFAULT NULL ,
   start_time timestamp DEFAULT NULL ,
   end_time timestamp DEFAULT NULL ,
@@ -538,17 +546,19 @@ CREATE TABLE t_ds_process_instance (
   update_time timestamp NULL ,
   is_sub_process int DEFAULT '0' ,
   executor_id int NOT NULL ,
+  executor_name varchar(64) DEFAULT NULL,
   history_cmd text ,
   dependence_schedule_times text ,
   process_instance_priority int DEFAULT '2' ,
-  worker_group varchar(64) ,
+  worker_group varchar(255) ,
   environment_code bigint DEFAULT '-1',
   timeout int DEFAULT '0' ,
-  tenant_id int NOT NULL DEFAULT '-1' ,
+  tenant_code               varchar(64) DEFAULT 'default',
   var_pool text ,
   dry_run int DEFAULT '0' ,
   next_process_instance_id int DEFAULT '0',
   restart_time timestamp DEFAULT NULL ,
+  test_flag int DEFAULT NULL ,
   PRIMARY KEY (id)
 ) ;
 
@@ -562,7 +572,7 @@ create index start_time_index on t_ds_process_instance (start_time,end_time);
 DROP TABLE IF EXISTS t_ds_project;
 CREATE TABLE t_ds_project (
   id int NOT NULL  ,
-  name varchar(100) DEFAULT NULL ,
+  name varchar(255) DEFAULT NULL ,
   code bigint NOT NULL,
   description varchar(255) DEFAULT NULL ,
   user_id int DEFAULT NULL ,
@@ -575,6 +585,48 @@ CREATE TABLE t_ds_project (
 create index user_id_index on t_ds_project (user_id);
 CREATE UNIQUE INDEX unique_name on t_ds_project (name);
 CREATE UNIQUE INDEX unique_code on t_ds_project (code);
+
+--
+-- Table structure for table t_ds_project_parameter
+--
+
+DROP TABLE IF EXISTS t_ds_project_parameter;
+CREATE TABLE t_ds_project_parameter (
+  id int NOT NULL  ,
+  param_name varchar(255) NOT NULL ,
+  param_value text NOT NULL ,
+  code bigint NOT NULL,
+  project_code bigint NOT NULL,
+  user_id int DEFAULT NULL ,
+  create_time timestamp DEFAULT CURRENT_TIMESTAMP ,
+  update_time timestamp DEFAULT CURRENT_TIMESTAMP ,
+  PRIMARY KEY (id)
+) ;
+
+CREATE UNIQUE INDEX unique_project_parameter_name on t_ds_project_parameter (project_code, param_name);
+CREATE UNIQUE INDEX unique_project_parameter_code on t_ds_project_parameter (code);
+
+
+--
+-- Table structure for table t_ds_project_preference
+--
+DROP TABLE IF EXISTS t_ds_project_preference;
+CREATE TABLE t_ds_project_preference
+(
+    id int NOT NULL  ,
+    code bigint NOT NULL,
+    project_code bigint NOT NULL,
+    preferences varchar(512) NOT NULL,
+    user_id int DEFAULT NULL ,
+    state int default 1,
+    create_time timestamp DEFAULT CURRENT_TIMESTAMP ,
+    update_time timestamp DEFAULT CURRENT_TIMESTAMP ,
+    PRIMARY KEY (id)
+);
+
+CREATE UNIQUE INDEX unique_project_preference_project_code on t_ds_project_preference (project_code);
+CREATE UNIQUE INDEX unique_project_preference_code on t_ds_project_preference (code);
+
 
 --
 -- Table structure for table t_ds_queue
@@ -643,7 +695,7 @@ create index relation_project_user_id_index on t_ds_relation_project_user (user_
 --
 -- Table structure for table t_ds_relation_resources_user
 --
-
+-- Deprecated
 DROP TABLE IF EXISTS t_ds_relation_resources_user;
 CREATE TABLE t_ds_relation_resources_user (
   id int NOT NULL ,
@@ -674,7 +726,7 @@ CREATE TABLE t_ds_relation_udfs_user (
 --
 -- Table structure for table t_ds_resources
 --
-
+-- Deprecated
 DROP TABLE IF EXISTS t_ds_resources;
 CREATE TABLE t_ds_resources (
   id int NOT NULL  ,
@@ -692,7 +744,6 @@ CREATE TABLE t_ds_resources (
   PRIMARY KEY (id),
   CONSTRAINT t_ds_resources_un UNIQUE (full_name, type)
 ) ;
-
 
 --
 -- Table structure for table t_ds_schedules
@@ -712,7 +763,8 @@ CREATE TABLE t_ds_schedules (
   warning_type int NOT NULL ,
   warning_group_id int DEFAULT NULL ,
   process_instance_priority int DEFAULT '2' ,
-  worker_group varchar(64),
+  worker_group varchar(255),
+  tenant_code               varchar(64) DEFAULT 'default',
   environment_code bigint DEFAULT '-1',
   create_time timestamp NOT NULL ,
   update_time timestamp NOT NULL ,
@@ -743,8 +795,10 @@ CREATE TABLE t_ds_task_instance (
   task_type varchar(50) DEFAULT NULL ,
   task_execute_type int DEFAULT '0',
   task_code bigint NOT NULL,
-  task_definition_version int DEFAULT NULL ,
+  task_definition_version int NOT NULL DEFAULT '1' ,
   process_instance_id int DEFAULT NULL ,
+  process_instance_name varchar(255) DEFAULT NULL,
+  project_code bigint DEFAULT NULL,
   state int DEFAULT NULL ,
   submit_time timestamp DEFAULT NULL ,
   start_time timestamp DEFAULT NULL ,
@@ -758,13 +812,16 @@ CREATE TABLE t_ds_task_instance (
   app_link text ,
   task_params text ,
   flag int DEFAULT '1' ,
+  is_cache int DEFAULT '0',
+  cache_key varchar(200) DEFAULT NULL,
   retry_interval int DEFAULT NULL ,
   max_retry_times int DEFAULT NULL ,
   task_instance_priority int DEFAULT NULL ,
-  worker_group varchar(64),
+  worker_group varchar(255),
   environment_code bigint DEFAULT '-1',
   environment_config text,
   executor_id int DEFAULT NULL ,
+  executor_name varchar(64) DEFAULT NULL ,
   first_submit_time timestamp DEFAULT NULL ,
   delay_time int DEFAULT '0' ,
   task_group_id int DEFAULT NULL,
@@ -772,10 +829,12 @@ CREATE TABLE t_ds_task_instance (
   dry_run int DEFAULT '0' ,
   cpu_quota int DEFAULT '-1' NOT NULL,
   memory_max int DEFAULT '-1' NOT NULL,
+  test_flag int DEFAULT NULL ,
   PRIMARY KEY (id)
 ) ;
 
 create index idx_task_instance_code_version on t_ds_task_instance (task_code, task_definition_version);
+create index idx_cache_key on t_ds_task_instance (cache_key);
 
 --
 -- Table structure for table t_ds_tenant
@@ -802,7 +861,7 @@ DROP TABLE IF EXISTS t_ds_udfs;
 CREATE TABLE t_ds_udfs (
   id int NOT NULL  ,
   user_id int NOT NULL ,
-  func_name varchar(100) NOT NULL ,
+  func_name varchar(255) NOT NULL ,
   class_name varchar(255) NOT NULL ,
   type int NOT NULL ,
   arg_types varchar(255) DEFAULT NULL ,
@@ -829,7 +888,7 @@ CREATE TABLE t_ds_user (
   user_type int DEFAULT NULL ,
   email varchar(64) DEFAULT NULL ,
   phone varchar(11) DEFAULT NULL ,
-  tenant_id int DEFAULT NULL ,
+  tenant_id int DEFAULT -1 ,
   create_time timestamp DEFAULT NULL ,
   update_time timestamp DEFAULT NULL ,
   queue varchar(64) DEFAULT NULL ,
@@ -846,7 +905,7 @@ comment on column t_ds_user.state is 'state 0:disable 1:enable';
 DROP TABLE IF EXISTS t_ds_version;
 CREATE TABLE t_ds_version (
   id int NOT NULL ,
-  version varchar(200) NOT NULL,
+  version varchar(63) NOT NULL,
   PRIMARY KEY (id)
 ) ;
 create index version_index on t_ds_version(version);
@@ -867,6 +926,21 @@ CREATE TABLE t_ds_worker_group (
   PRIMARY KEY (id) ,
   CONSTRAINT name_unique UNIQUE (name)
 ) ;
+
+--
+-- Table structure for table t_ds_relation_project_worker_group
+--
+
+DROP TABLE IF EXISTS t_ds_relation_project_worker_group;
+CREATE TABLE t_ds_relation_project_worker_group (
+    id int NOT NULL  ,
+    project_code bigint DEFAULT NULL ,
+    worker_group varchar(255) NOT NULL,
+    create_time timestamp DEFAULT NULL,
+    update_time timestamp DEFAULT NULL,
+    PRIMARY KEY (id),
+    CONSTRAINT t_ds_relation_project_worker_group_un UNIQUE (project_code, worker_group)
+);
 
 DROP SEQUENCE IF EXISTS t_ds_access_token_id_sequence;
 CREATE SEQUENCE  t_ds_access_token_id_sequence;
@@ -957,20 +1031,38 @@ DROP SEQUENCE IF EXISTS t_ds_worker_group_id_sequence;
 CREATE SEQUENCE  t_ds_worker_group_id_sequence;
 ALTER TABLE t_ds_worker_group ALTER COLUMN id SET DEFAULT NEXTVAL('t_ds_worker_group_id_sequence');
 
+DROP SEQUENCE IF EXISTS t_ds_project_parameter_id_sequence;
+CREATE SEQUENCE  t_ds_project_parameter_id_sequence;
+ALTER TABLE t_ds_project_parameter ALTER COLUMN id SET DEFAULT NEXTVAL('t_ds_project_parameter_id_sequence');
+
+DROP SEQUENCE IF EXISTS t_ds_project_preference_id_sequence;
+CREATE SEQUENCE t_ds_project_preference_id_sequence;
+ALTER TABLE t_ds_project_preference ALTER COLUMN id SET DEFAULT NEXTVAL('t_ds_project_preference_id_sequence');
+
+DROP SEQUENCE IF EXISTS t_ds_relation_project_worker_group_sequence;
+CREATE SEQUENCE  t_ds_relation_project_worker_group_sequence;
+ALTER TABLE t_ds_relation_project_worker_group ALTER COLUMN id SET DEFAULT NEXTVAL('t_ds_relation_project_worker_group_sequence');
+
 -- Records of t_ds_user?user : admin , password : dolphinscheduler123
 INSERT INTO t_ds_user(user_name, user_password, user_type, email, phone, tenant_id, state, create_time, update_time, time_zone)
-VALUES ('admin', '7ad2410b2f4c074479a8937a28a22b8f', '0', 'xxx@qq.com', '', '0', 1, '2018-03-27 15:48:50', '2018-10-24 17:40:22', null);
+VALUES ('admin', '7ad2410b2f4c074479a8937a28a22b8f', '0', 'xxx@qq.com', '', '-1', 1, '2018-03-27 15:48:50', '2018-10-24 17:40:22', null);
+
+-- Records of t_ds_tenant
+INSERT INTO t_ds_tenant(id, tenant_code, description, queue_id, create_time, update_time)
+VALUES (-1, 'default', 'default tenant', '1', '2018-03-27 15:48:50', '2018-10-24 17:40:22');
 
 -- Records of t_ds_alertgroup, default admin warning group
 INSERT INTO t_ds_alertgroup(alert_instance_ids, create_user_id, group_name, description, create_time, update_time)
-VALUES ('1,2', 1, 'default admin warning group', 'default admin warning group', '2018-11-29 10:20:39', '2018-11-29 10:20:39');
+VALUES (NULL, 1, 'default admin warning group', 'default admin warning group', '2018-11-29 10:20:39', '2018-11-29 10:20:39');
+INSERT INTO t_ds_alertgroup(alert_instance_ids, create_user_id, group_name, description, create_time, update_time)
+VALUES (NULL, 1, 'global alert group', 'global alert group', '2018-11-29 10:20:39', '2018-11-29 10:20:39');
 
 -- Records of t_ds_queue,default queue name : default
 INSERT INTO t_ds_queue(queue_name, queue, create_time, update_time)
 VALUES ('default', 'default', '2018-11-29 10:22:33', '2018-11-29 10:22:33');
 
 -- Records of t_ds_queue,default queue name : default
-INSERT INTO t_ds_version(version) VALUES ('1.4.0');
+INSERT INTO t_ds_version(version) VALUES ('3.3.0');
 
 --
 -- Table structure for table t_ds_plugin_define
@@ -979,8 +1071,8 @@ INSERT INTO t_ds_version(version) VALUES ('1.4.0');
 DROP TABLE IF EXISTS t_ds_plugin_define;
 CREATE TABLE t_ds_plugin_define (
   id serial NOT NULL,
-  plugin_name varchar(100) NOT NULL,
-  plugin_type varchar(100) NOT NULL,
+  plugin_name varchar(255) NOT NULL,
+  plugin_type varchar(63) NOT NULL,
   plugin_params text NULL,
   create_time timestamp NULL,
   update_time timestamp NULL,
@@ -995,11 +1087,13 @@ CREATE TABLE t_ds_plugin_define (
 DROP TABLE IF EXISTS t_ds_alert_plugin_instance;
 CREATE TABLE t_ds_alert_plugin_instance (
 	id serial NOT NULL,
-	plugin_define_id int4 NOT NULL,
+	plugin_define_id int NOT NULL,
 	plugin_instance_params text NULL,
 	create_time timestamp NULL,
 	update_time timestamp NULL,
-	instance_name varchar(200) NULL,
+	instance_name varchar(255) NULL,
+	instance_type int NOT NULL default '0',
+	warning_type int NOT NULL default '3',
 	CONSTRAINT t_ds_alert_plugin_instance_pk PRIMARY KEY (id)
 );
 
@@ -1075,7 +1169,7 @@ CREATE TABLE t_ds_dq_execute_result (
 DROP TABLE IF EXISTS t_ds_dq_rule;
 CREATE TABLE t_ds_dq_rule (
     id serial NOT NULL,
-    "name" varchar(100) DEFAULT NULL,
+    "name" varchar(255) DEFAULT NULL,
     "type" int4 NULL,
     user_id int4 NULL,
     create_time timestamp NULL,
@@ -1189,11 +1283,11 @@ CREATE TABLE t_ds_dq_rule_input_entry (
     field varchar(255) DEFAULT NULL,
     "type" varchar(255) DEFAULT NULL,
     title varchar(255) DEFAULT NULL,
-    value varchar(255)  DEFAULT NULL,
+    data varchar(255)  DEFAULT NULL,
     "options" text DEFAULT NULL,
     placeholder varchar(255) DEFAULT NULL,
     option_source_type int4 NULL,
-    value_type int4 NULL,
+    data_type int4 NULL,
     input_type int4 NULL,
     is_show int2 NULL DEFAULT '1'::smallint,
     can_edit int2 NULL DEFAULT '1'::smallint,
@@ -1204,92 +1298,98 @@ CREATE TABLE t_ds_dq_rule_input_entry (
     CONSTRAINT t_ds_dq_rule_input_entry_pk PRIMARY KEY (id)
 );
 INSERT INTO t_ds_dq_rule_input_entry
-(id, field, "type", title, value, "options", placeholder, option_source_type, value_type, input_type, is_show, can_edit, is_emit, is_validate, create_time, update_time)
+(id, field, "type", title, data, "options", placeholder, option_source_type, data_type, input_type, is_show, can_edit, is_emit, is_validate, create_time, update_time)
 VALUES(1, 'src_connector_type', 'select', '$t(src_connector_type)', '', '[{"label":"HIVE","value":"HIVE"},{"label":"JDBC","value":"JDBC"}]', 'please select source connector type', 2, 2, 0, 1, 1, 1, 0, '2021-03-03 11:31:24.000', '2021-03-03 11:31:24.000');
 INSERT INTO t_ds_dq_rule_input_entry
-(id, field, "type", title, value, "options", placeholder, option_source_type, value_type, input_type, is_show, can_edit, is_emit, is_validate, create_time, update_time)
+(id, field, "type", title, data, "options", placeholder, option_source_type, data_type, input_type, is_show, can_edit, is_emit, is_validate, create_time, update_time)
 VALUES(2, 'src_datasource_id', 'select', '$t(src_datasource_id)', '', NULL, 'please select source datasource id', 1, 2, 0, 1, 1, 1, 0, '2021-03-03 11:31:24.000', '2021-03-03 11:31:24.000');
 INSERT INTO t_ds_dq_rule_input_entry
-(id, field, "type", title, value, "options", placeholder, option_source_type, value_type, input_type, is_show, can_edit, is_emit, is_validate, create_time, update_time)
+(id, field, "type", title, data, "options", placeholder, option_source_type, data_type, input_type, is_show, can_edit, is_emit, is_validate, create_time, update_time)
 VALUES(3, 'src_table', 'select', '$t(src_table)', NULL, NULL, 'Please enter source table name', 0, 0, 0, 1, 1, 1, 1, '2021-03-03 11:31:24.000', '2021-03-03 11:31:24.000');
 INSERT INTO t_ds_dq_rule_input_entry
-(id, field, "type", title, value, "options", placeholder, option_source_type, value_type, input_type, is_show, can_edit, is_emit, is_validate, create_time, update_time)
+(id, field, "type", title, data, "options", placeholder, option_source_type, data_type, input_type, is_show, can_edit, is_emit, is_validate, create_time, update_time)
 VALUES(4, 'src_filter', 'input', '$t(src_filter)', NULL, NULL, 'Please enter filter expression', 0, 3, 0, 1, 1, 0, 0, '2021-03-03 11:31:24.000', '2021-03-03 11:31:24.000');
 INSERT INTO t_ds_dq_rule_input_entry
-(id, field, "type", title, value, "options", placeholder, option_source_type, value_type, input_type, is_show, can_edit, is_emit, is_validate, create_time, update_time)
+(id, field, "type", title, data, "options", placeholder, option_source_type, data_type, input_type, is_show, can_edit, is_emit, is_validate, create_time, update_time)
 VALUES(5, 'src_field', 'select', '$t(src_field)', NULL, NULL, 'Please enter column, only single column is supported', 0, 0, 0, 1, 1, 0, 1, '2021-03-03 11:31:24.000', '2021-03-03 11:31:24.000');
 INSERT INTO t_ds_dq_rule_input_entry
-(id, field, "type", title, value, "options", placeholder, option_source_type, value_type, input_type, is_show, can_edit, is_emit, is_validate, create_time, update_time)
+(id, field, "type", title, data, "options", placeholder, option_source_type, data_type, input_type, is_show, can_edit, is_emit, is_validate, create_time, update_time)
 VALUES(6, 'statistics_name', 'input', '$t(statistics_name)', NULL, NULL, 'Please enter statistics name, the alias in statistics execute sql', 0, 0, 1, 0, 0, 0, 1, '2021-03-03 11:31:24.000', '2021-03-03 11:31:24.000');
 INSERT INTO t_ds_dq_rule_input_entry
-(id, field, "type", title, value, "options", placeholder, option_source_type, value_type, input_type, is_show, can_edit, is_emit, is_validate, create_time, update_time)
+(id, field, "type", title, data, "options", placeholder, option_source_type, data_type, input_type, is_show, can_edit, is_emit, is_validate, create_time, update_time)
 VALUES(7, 'check_type', 'select', '$t(check_type)', '0', '[{"label":"Expected - Actual","value":"0"},{"label":"Actual - Expected","value":"1"},{"label":"Actual / Expected","value":"2"},{"label":"(Expected - Actual) / Expected","value":"3"}]', 'please select check type', 0, 0, 3, 1, 1, 1, 0, '2021-03-03 11:31:24.000', '2021-03-03 11:31:24.000');
 INSERT INTO t_ds_dq_rule_input_entry
-(id, field, "type", title, value, "options", placeholder, option_source_type, value_type, input_type, is_show, can_edit, is_emit, is_validate, create_time, update_time)
+(id, field, "type", title, data, "options", placeholder, option_source_type, data_type, input_type, is_show, can_edit, is_emit, is_validate, create_time, update_time)
 VALUES(8, 'operator', 'select', '$t(operator)', '0', '[{"label":"=","value":"0"},{"label":"<","value":"1"},{"label":"<=","value":"2"},{"label":">","value":"3"},{"label":">=","value":"4"},{"label":"!=","value":"5"}]', 'please select operator', 0, 0, 3, 1, 1, 0, 0, '2021-03-03 11:31:24.000', '2021-03-03 11:31:24.000');
 INSERT INTO t_ds_dq_rule_input_entry
-(id, field, "type", title, value, "options", placeholder, option_source_type, value_type, input_type, is_show, can_edit, is_emit, is_validate, create_time, update_time)
+(id, field, "type", title, data, "options", placeholder, option_source_type, data_type, input_type, is_show, can_edit, is_emit, is_validate, create_time, update_time)
 VALUES(9, 'threshold', 'input', '$t(threshold)', NULL, NULL, 'Please enter threshold, number is needed', 0, 2, 3, 1, 1, 0, 1, '2021-03-03 11:31:24.000', '2021-03-03 11:31:24.000');
 INSERT INTO t_ds_dq_rule_input_entry
-(id, field, "type", title, value, "options", placeholder, option_source_type, value_type, input_type, is_show, can_edit, is_emit, is_validate, create_time, update_time)
+(id, field, "type", title, data, "options", placeholder, option_source_type, data_type, input_type, is_show, can_edit, is_emit, is_validate, create_time, update_time)
 VALUES(10, 'failure_strategy', 'select', '$t(failure_strategy)', '0', '[{"label":"Alert","value":"0"},{"label":"Block","value":"1"}]', 'please select failure strategy', 0, 0, 3, 1, 1, 0, 0, '2021-03-03 11:31:24.000', '2021-03-03 11:31:24.000');
 INSERT INTO t_ds_dq_rule_input_entry
-(id, field, "type", title, value, "options", placeholder, option_source_type, value_type, input_type, is_show, can_edit, is_emit, is_validate, create_time, update_time)
+(id, field, "type", title, data, "options", placeholder, option_source_type, data_type, input_type, is_show, can_edit, is_emit, is_validate, create_time, update_time)
 VALUES(11, 'target_connector_type', 'select', '$t(target_connector_type)', '', '[{"label":"HIVE","value":"HIVE"},{"label":"JDBC","value":"JDBC"}]', 'Please select target connector type', 2, 0, 0, 1, 1, 1, 0, '2021-03-03 11:31:24.000', '2021-03-03 11:31:24.000');
 INSERT INTO t_ds_dq_rule_input_entry
-(id, field, "type", title, value, "options", placeholder, option_source_type, value_type, input_type, is_show, can_edit, is_emit, is_validate, create_time, update_time)
+(id, field, "type", title, data, "options", placeholder, option_source_type, data_type, input_type, is_show, can_edit, is_emit, is_validate, create_time, update_time)
 VALUES(12, 'target_datasource_id', 'select', '$t(target_datasource_id)', '', NULL, 'Please select target datasource', 1, 2, 0, 1, 1, 1, 0, '2021-03-03 11:31:24.000', '2021-03-03 11:31:24.000');
 INSERT INTO t_ds_dq_rule_input_entry
-(id, field, "type", title, value, "options", placeholder, option_source_type, value_type, input_type, is_show, can_edit, is_emit, is_validate, create_time, update_time)
+(id, field, "type", title, data, "options", placeholder, option_source_type, data_type, input_type, is_show, can_edit, is_emit, is_validate, create_time, update_time)
 VALUES(13, 'target_table', 'select', '$t(target_table)', NULL, NULL, 'Please enter target table', 0, 0, 0, 1, 1, 1, 1, '2021-03-03 11:31:24.000', '2021-03-03 11:31:24.000');
 INSERT INTO t_ds_dq_rule_input_entry
-(id, field, "type", title, value, "options", placeholder, option_source_type, value_type, input_type, is_show, can_edit, is_emit, is_validate, create_time, update_time)
+(id, field, "type", title, data, "options", placeholder, option_source_type, data_type, input_type, is_show, can_edit, is_emit, is_validate, create_time, update_time)
 VALUES(14, 'target_filter', 'input', '$t(target_filter)', NULL, NULL, 'Please enter target filter expression', 0, 3, 0, 1, 1, 0, 0, '2021-03-03 11:31:24.000', '2021-03-03 11:31:24.000');
 INSERT INTO t_ds_dq_rule_input_entry
-(id, field, "type", title, value, "options", placeholder, option_source_type, value_type, input_type, is_show, can_edit, is_emit, is_validate, create_time, update_time)
+(id, field, "type", title, data, "options", placeholder, option_source_type, data_type, input_type, is_show, can_edit, is_emit, is_validate, create_time, update_time)
 VALUES(15, 'mapping_columns', 'group', '$t(mapping_columns)', NULL, '[{"field":"src_field","props":{"placeholder":"Please input src field","rows":0,"disabled":false,"size":"small"},"type":"input","title":"src_field"},{"field":"operator","props":{"placeholder":"Please input operator","rows":0,"disabled":false,"size":"small"},"type":"input","title":"operator"},{"field":"target_field","props":{"placeholder":"Please input target field","rows":0,"disabled":false,"size":"small"},"type":"input","title":"target_field"}]', 'please enter mapping columns', 0, 0, 0, 1, 1, 0, 0, '2021-03-03 11:31:24.000', '2021-03-03 11:31:24.000');
 INSERT INTO t_ds_dq_rule_input_entry
-(id, field, "type", title, value, "options", placeholder, option_source_type, value_type, input_type, is_show, can_edit, is_emit, is_validate, create_time, update_time)
+(id, field, "type", title, data, "options", placeholder, option_source_type, data_type, input_type, is_show, can_edit, is_emit, is_validate, create_time, update_time)
 VALUES(16, 'statistics_execute_sql', 'textarea', '$t(statistics_execute_sql)', NULL, NULL, 'Please enter statistics execute sql', 0, 3, 0, 1, 1, 0, 1, '2021-03-03 11:31:24.000', '2021-03-03 11:31:24.000');
 INSERT INTO t_ds_dq_rule_input_entry
-(id, field, "type", title, value, "options", placeholder, option_source_type, value_type, input_type, is_show, can_edit, is_emit, is_validate, create_time, update_time)
+(id, field, "type", title, data, "options", placeholder, option_source_type, data_type, input_type, is_show, can_edit, is_emit, is_validate, create_time, update_time)
 VALUES(17, 'comparison_name', 'input', '$t(comparison_name)', NULL, NULL, 'Please enter comparison name, the alias in comparison execute sql', 0, 0, 0, 0, 0, 0, 1, '2021-03-03 11:31:24.000', '2021-03-03 11:31:24.000');
 INSERT INTO t_ds_dq_rule_input_entry
-(id, field, "type", title, value, "options", placeholder, option_source_type, value_type, input_type, is_show, can_edit, is_emit, is_validate, create_time, update_time)
+(id, field, "type", title, data, "options", placeholder, option_source_type, data_type, input_type, is_show, can_edit, is_emit, is_validate, create_time, update_time)
 VALUES(18, 'comparison_execute_sql', 'textarea', '$t(comparison_execute_sql)', NULL, NULL, 'Please enter comparison execute sql', 0, 3, 0, 1, 1, 0, 1, '2021-03-03 11:31:24.000', '2021-03-03 11:31:24.000');
 INSERT INTO t_ds_dq_rule_input_entry
-(id, field, "type", title, value, "options", placeholder, option_source_type, value_type, input_type, is_show, can_edit, is_emit, is_validate, create_time, update_time)
+(id, field, "type", title, data, "options", placeholder, option_source_type, data_type, input_type, is_show, can_edit, is_emit, is_validate, create_time, update_time)
 VALUES(19, 'comparison_type', 'select', '$t(comparison_type)', '', NULL, 'Please enter comparison title', 3, 0, 2, 1, 0, 1, 0, '2021-03-03 11:31:24.000', '2021-03-03 11:31:24.000');
 INSERT INTO t_ds_dq_rule_input_entry
-(id, field, "type", title, value, "options", placeholder, option_source_type, value_type, input_type, is_show, can_edit, is_emit, is_validate, create_time, update_time)
+(id, field, "type", title, data, "options", placeholder, option_source_type, data_type, input_type, is_show, can_edit, is_emit, is_validate, create_time, update_time)
 VALUES(20, 'writer_connector_type', 'select', '$t(writer_connector_type)', '', '[{"label":"MYSQL","value":"0"},{"label":"POSTGRESQL","value":"1"}]', 'please select writer connector type', 0, 2, 0, 1, 1, 1, 0, '2021-03-03 11:31:24.000', '2021-03-03 11:31:24.000');
 INSERT INTO t_ds_dq_rule_input_entry
-(id, field, "type", title, value, "options", placeholder, option_source_type, value_type, input_type, is_show, can_edit, is_emit, is_validate, create_time, update_time)
+(id, field, "type", title, data, "options", placeholder, option_source_type, data_type, input_type, is_show, can_edit, is_emit, is_validate, create_time, update_time)
 VALUES(21, 'writer_datasource_id', 'select', '$t(writer_datasource_id)', '', NULL, 'please select writer datasource id', 1, 2, 0, 1, 1, 0, 0, '2021-03-03 11:31:24.000', '2021-03-03 11:31:24.000');
 INSERT INTO t_ds_dq_rule_input_entry
-(id, field, "type", title, value, "options", placeholder, option_source_type, value_type, input_type, is_show, can_edit, is_emit, is_validate, create_time, update_time)
+(id, field, "type", title, data, "options", placeholder, option_source_type, data_type, input_type, is_show, can_edit, is_emit, is_validate, create_time, update_time)
 VALUES(22, 'target_field', 'select', '$t(target_field)', NULL, NULL, 'Please enter column, only single column is supported', 0, 0, 0, 1, 1, 0, 0, '2021-03-03 11:31:24.000', '2021-03-03 11:31:24.000');
 INSERT INTO t_ds_dq_rule_input_entry
-(id, field, "type", title, value, "options", placeholder, option_source_type, value_type, input_type, is_show, can_edit, is_emit, is_validate, create_time, update_time)
+(id, field, "type", title, data, "options", placeholder, option_source_type, data_type, input_type, is_show, can_edit, is_emit, is_validate, create_time, update_time)
 VALUES(23, 'field_length', 'input', '$t(field_length)', NULL, NULL, 'Please enter length limit', 0, 3, 0, 1, 1, 0, 0, '2021-03-03 11:31:24.000', '2021-03-03 11:31:24.000');
 INSERT INTO t_ds_dq_rule_input_entry
-(id, field, "type", title, value, "options", placeholder, option_source_type, value_type, input_type, is_show, can_edit, is_emit, is_validate, create_time, update_time)
+(id, field, "type", title, data, "options", placeholder, option_source_type, data_type, input_type, is_show, can_edit, is_emit, is_validate, create_time, update_time)
 VALUES(24, 'logic_operator', 'select', '$t(logic_operator)', '=', '[{"label":"=","value":"="},{"label":"<","value":"<"},{"label":"<=","value":"<="},{"label":">","value":">"},{"label":">=","value":">="},{"label":"<>","value":"<>"}]', 'please select logic operator', 0, 0, 3, 1, 1, 0, 0, '2021-03-03 11:31:24.000', '2021-03-03 11:31:24.000');
 INSERT INTO t_ds_dq_rule_input_entry
-(id, field, "type", title, value, "options", placeholder, option_source_type, value_type, input_type, is_show, can_edit, is_emit, is_validate, create_time, update_time)
+(id, field, "type", title, data, "options", placeholder, option_source_type, data_type, input_type, is_show, can_edit, is_emit, is_validate, create_time, update_time)
 VALUES(25, 'regexp_pattern', 'input', '$t(regexp_pattern)', NULL, NULL, 'Please enter regexp pattern', 0, 0, 0, 1, 1, 0, 0, '2021-03-03 11:31:24.000', '2021-03-03 11:31:24.000');
 INSERT INTO t_ds_dq_rule_input_entry
-(id, field, "type", title, value, "options", placeholder, option_source_type, value_type, input_type, is_show, can_edit, is_emit, is_validate, create_time, update_time)
+(id, field, "type", title, data, "options", placeholder, option_source_type, data_type, input_type, is_show, can_edit, is_emit, is_validate, create_time, update_time)
 VALUES(26, 'deadline', 'input', '$t(deadline)', NULL, NULL, 'Please enter deadline', 0, 0, 0, 1, 1, 0, 0, '2021-03-03 11:31:24.000', '2021-03-03 11:31:24.000');
 INSERT INTO t_ds_dq_rule_input_entry
-(id, field, "type", title, value, "options", placeholder, option_source_type, value_type, input_type, is_show, can_edit, is_emit, is_validate, create_time, update_time)
+(id, field, "type", title, data, "options", placeholder, option_source_type, data_type, input_type, is_show, can_edit, is_emit, is_validate, create_time, update_time)
 VALUES(27, 'datetime_format', 'input', '$t(datetime_format)', NULL, NULL, 'Please enter datetime format', 0, 0, 0, 1, 1, 0, 0, '2021-03-03 11:31:24.000', '2021-03-03 11:31:24.000');
 INSERT INTO t_ds_dq_rule_input_entry
-(id, field, "type", title, value, "options", placeholder, option_source_type, value_type, input_type, is_show, can_edit, is_emit, is_validate, create_time, update_time)
+(id, field, "type", title, data, "options", placeholder, option_source_type, data_type, input_type, is_show, can_edit, is_emit, is_validate, create_time, update_time)
 VALUES(28, 'enum_list', 'input', '$t(enum_list)', NULL, NULL, 'Please enter enumeration', 0, 0, 0, 1, 1, 0, 0, '2021-03-03 11:31:24.000', '2021-03-03 11:31:24.000');
 INSERT INTO t_ds_dq_rule_input_entry
-(id, field, "type", title, value, "options", placeholder, option_source_type, value_type, input_type, is_show, can_edit, is_emit, is_validate, create_time, update_time)
+(id, field, "type", title, data, "options", placeholder, option_source_type, data_type, input_type, is_show, can_edit, is_emit, is_validate, create_time, update_time)
 VALUES(29, 'begin_time', 'input', '$t(begin_time)', NULL, NULL, 'Please enter begin time', 0, 0, 0, 1, 1, 0, 0, '2021-03-03 11:31:24.000', '2021-03-03 11:31:24.000');
+INSERT INTO t_ds_dq_rule_input_entry
+(id, field, "type", title, data, "options", placeholder, option_source_type, data_type, input_type, is_show, can_edit, is_emit, is_validate, create_time, update_time)
+VALUES(30, 'src_database', 'select', '$t(src_database)', NULL, NULL, 'Please select source database', 0, 0, 0, 1, 1, 1, 1, '2021-03-03 11:31:24.000', '2021-03-03 11:31:24.000');
+INSERT INTO t_ds_dq_rule_input_entry
+(id, field, "type", title, data, "options", placeholder, option_source_type, data_type, input_type, is_show, can_edit, is_emit, is_validate, create_time, update_time)
+VALUES(31, 'target_database', 'select', '$t(target_database)', NULL, NULL, 'Please select target database', 0, 0, 0, 1, 1, 1, 1, '2021-03-03 11:31:24.000', '2021-03-03 11:31:24.000');
 
 --
 -- Table structure for table t_ds_dq_task_statistics_value
@@ -1774,7 +1874,42 @@ VALUES(149, 10, 19, NULL, 12, '2021-03-03 11:31:24.000', '2021-03-03 11:31:24.00
 INSERT INTO t_ds_relation_rule_input_entry
 (id, rule_id, rule_input_entry_id, values_map, "index", create_time, update_time)
 VALUES(150, 8, 29, NULL, 7, '2021-03-03 11:31:24.000', '2021-03-03 11:31:24.000');
-
+INSERT INTO t_ds_relation_rule_input_entry
+(id, rule_id, rule_input_entry_id, values_map, "index", create_time, update_time)
+VALUES(151, 1, 30, NULL, 2, '2021-03-03 11:31:24.000', '2021-03-03 11:31:24.000');
+INSERT INTO t_ds_relation_rule_input_entry
+(id, rule_id, rule_input_entry_id, values_map, "index", create_time, update_time)
+VALUES(152, 2, 30, NULL, 2, '2021-03-03 11:31:24.000', '2021-03-03 11:31:24.000');
+INSERT INTO t_ds_relation_rule_input_entry
+(id, rule_id, rule_input_entry_id, values_map, "index", create_time, update_time)
+VALUES(153, 3, 30, NULL, 2, '2021-03-03 11:31:24.000', '2021-03-03 11:31:24.000');
+INSERT INTO t_ds_relation_rule_input_entry
+(id, rule_id, rule_input_entry_id, values_map, "index", create_time, update_time)
+VALUES(154, 4, 30, NULL, 2, '2021-03-03 11:31:24.000', '2021-03-03 11:31:24.000');
+INSERT INTO t_ds_relation_rule_input_entry
+(id, rule_id, rule_input_entry_id, values_map, "index", create_time, update_time)
+VALUES(155, 5, 30, NULL, 2, '2021-03-03 11:31:24.000', '2021-03-03 11:31:24.000');
+INSERT INTO t_ds_relation_rule_input_entry
+(id, rule_id, rule_input_entry_id, values_map, "index", create_time, update_time)
+VALUES(156, 6, 30, NULL, 2, '2021-03-03 11:31:24.000', '2021-03-03 11:31:24.000');
+INSERT INTO t_ds_relation_rule_input_entry
+(id, rule_id, rule_input_entry_id, values_map, "index", create_time, update_time)
+VALUES(157, 7, 30, NULL, 2, '2021-03-03 11:31:24.000', '2021-03-03 11:31:24.000');
+INSERT INTO t_ds_relation_rule_input_entry
+(id, rule_id, rule_input_entry_id, values_map, "index", create_time, update_time)
+VALUES(158, 8, 30, NULL, 2, '2021-03-03 11:31:24.000', '2021-03-03 11:31:24.000');
+INSERT INTO t_ds_relation_rule_input_entry
+(id, rule_id, rule_input_entry_id, values_map, "index", create_time, update_time)
+VALUES(159, 9, 30, NULL, 2, '2021-03-03 11:31:24.000', '2021-03-03 11:31:24.000');
+INSERT INTO t_ds_relation_rule_input_entry
+(id, rule_id, rule_input_entry_id, values_map, "index", create_time, update_time)
+VALUES(160, 10, 30, NULL, 2, '2021-03-03 11:31:24.000', '2021-03-03 11:31:24.000');
+INSERT INTO t_ds_relation_rule_input_entry
+(id, rule_id, rule_input_entry_id, values_map, "index", create_time, update_time)
+VALUES(161, 3, 31, NULL, 6, '2021-03-03 11:31:24.000', '2021-03-03 11:31:24.000');
+INSERT INTO t_ds_relation_rule_input_entry
+(id, rule_id, rule_input_entry_id, values_map, "index", create_time, update_time)
+VALUES(162, 4, 31, NULL, 7, '2021-03-03 11:31:24.000', '2021-03-03 11:31:24.000');
 --
 -- Table structure for table t_ds_environment
 --
@@ -1783,7 +1918,7 @@ DROP TABLE IF EXISTS t_ds_environment;
 CREATE TABLE t_ds_environment (
   id serial NOT NULL,
   code bigint NOT NULL,
-  name varchar(100) DEFAULT NULL,
+  name varchar(255) DEFAULT NULL,
   config text DEFAULT NULL,
   description text,
   operator int DEFAULT NULL,
@@ -1818,7 +1953,7 @@ DROP TABLE IF EXISTS t_ds_task_group_queue;
 CREATE TABLE t_ds_task_group_queue (
    id serial NOT NULL,
    task_id      int DEFAULT NULL ,
-   task_name    VARCHAR(100) DEFAULT NULL ,
+   task_name    VARCHAR(255) DEFAULT NULL ,
    group_id     int DEFAULT NULL ,
    process_id   int DEFAULT NULL ,
    priority     int DEFAULT '0' ,
@@ -1830,6 +1965,8 @@ CREATE TABLE t_ds_task_group_queue (
    PRIMARY KEY (id)
 );
 
+create index idx_t_ds_task_group_queue_in_queue on t_ds_task_group_queue(in_queue);
+
 --
 -- Table structure for table t_ds_task_group
 --
@@ -1837,7 +1974,7 @@ CREATE TABLE t_ds_task_group_queue (
 DROP TABLE IF EXISTS t_ds_task_group;
 CREATE TABLE t_ds_task_group (
    id serial NOT NULL,
-   name        varchar(100) DEFAULT NULL ,
+   name        varchar(255) DEFAULT NULL ,
    description varchar(255) DEFAULT NULL ,
    group_size  int NOT NULL ,
    project_code bigint DEFAULT '0' ,
@@ -1870,7 +2007,7 @@ CREATE TABLE t_ds_audit_log (
 DROP TABLE IF EXISTS t_ds_k8s;
 CREATE TABLE t_ds_k8s (
    id serial NOT NULL,
-   k8s_name    VARCHAR(100) DEFAULT NULL ,
+   k8s_name    VARCHAR(255) DEFAULT NULL ,
    k8s_config  text ,
    create_time timestamp DEFAULT NULL ,
    update_time timestamp DEFAULT NULL ,
@@ -1885,13 +2022,8 @@ DROP TABLE IF EXISTS t_ds_k8s_namespace;
 CREATE TABLE t_ds_k8s_namespace (
    id serial NOT NULL,
    code               bigint  NOT NULL,
-   limits_memory      int DEFAULT NULL ,
-   namespace          varchar(100) DEFAULT NULL ,
+   namespace          varchar(255) DEFAULT NULL ,
    user_id            int DEFAULT NULL,
-   pod_replicas       int DEFAULT NULL,
-   pod_request_cpu    NUMERIC(13,4) NULL,
-   pod_request_memory int DEFAULT NULL,
-   limits_cpu         NUMERIC(13,4) NULL,
    cluster_code       bigint  NOT NULL,
    create_time        timestamp DEFAULT NULL ,
    update_time        timestamp DEFAULT NULL ,
@@ -1937,16 +2069,77 @@ CREATE TABLE t_ds_alert_send_status (
 --
 
 DROP TABLE IF EXISTS t_ds_cluster;
-CREATE TABLE t_ds_cluster (
-    id serial NOT NULL,
-    code bigint NOT NULL,
-    name varchar(100) DEFAULT NULL,
-    config text DEFAULT NULL,
-    description text,
-    operator int DEFAULT NULL,
+CREATE TABLE t_ds_cluster(
+                             id          serial NOT NULL,
+                             code        bigint NOT NULL,
+                             name        varchar(255) DEFAULT NULL,
+                             config      text         DEFAULT NULL,
+                             description text,
+                             operator    int          DEFAULT NULL,
+                             create_time timestamp    DEFAULT NULL,
+                             update_time timestamp    DEFAULT NULL,
+                             PRIMARY KEY (id),
+                             CONSTRAINT cluster_name_unique UNIQUE (name),
+                             CONSTRAINT cluster_code_unique UNIQUE (code)
+);
+
+--
+-- Table structure for t_ds_fav_task
+--
+
+DROP TABLE IF EXISTS t_ds_fav_task;
+CREATE TABLE t_ds_fav_task
+(
+    id        serial      NOT NULL,
+    task_type varchar(64) NOT NULL,
+    user_id   int         NOT NULL,
+    PRIMARY KEY (id)
+);
+
+-- ----------------------------
+-- Table structure for t_ds_trigger_relation
+-- ----------------------------
+DROP TABLE IF EXISTS t_ds_trigger_relation;
+CREATE TABLE t_ds_trigger_relation (
+    id        serial      NOT NULL,
+    trigger_type int NOT NULL,
+    trigger_code bigint NOT NULL,
+    job_id bigint NOT NULL,
     create_time timestamp DEFAULT NULL,
     update_time timestamp DEFAULT NULL,
     PRIMARY KEY (id),
-    CONSTRAINT cluster_name_unique UNIQUE (name),
-    CONSTRAINT cluster_code_unique UNIQUE (code)
+    CONSTRAINT t_ds_trigger_relation_unique UNIQUE (trigger_type,job_id,trigger_code)
 );
+
+DROP TABLE IF EXISTS t_ds_relation_sub_workflow;
+CREATE TABLE t_ds_relation_sub_workflow (
+    id        serial      NOT NULL,
+    parent_workflow_instance_id BIGINT NOT NULL,
+    parent_task_code BIGINT NOT NULL,
+    sub_workflow_instance_id BIGINT NOT NULL,
+    PRIMARY KEY (id)
+);
+CREATE INDEX idx_parent_workflow_instance_id ON t_ds_relation_sub_workflow (parent_workflow_instance_id);
+CREATE INDEX idx_parent_task_code ON t_ds_relation_sub_workflow (parent_task_code);
+CREATE INDEX idx_sub_workflow_instance_id ON t_ds_relation_sub_workflow (sub_workflow_instance_id);
+
+--
+-- Table structure for table t_ds_alert
+--
+
+DROP TABLE IF EXISTS t_ds_listener_event;
+CREATE TABLE t_ds_listener_event(
+    id          int         NOT NULL,
+    content     text,
+    sign        varchar(64) NOT NULL DEFAULT '',
+    post_status int         NOT NULL DEFAULT '0',
+    event_type  int         NOT NULL,
+    log         text,
+    create_time timestamp            DEFAULT NULL,
+    update_time timestamp            DEFAULT NULL,
+    PRIMARY KEY (id)
+);
+comment on column t_ds_listener_event.sign is 'sign=sha1(content)';
+
+create index idx_listener_event_post_status on t_ds_listener_event (post_status);
+create index idx_listener_event_sign on t_ds_listener_event (sign);

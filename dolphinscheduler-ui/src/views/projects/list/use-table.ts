@@ -25,7 +25,7 @@ import { deleteProject } from '@/service/modules/projects'
 import { format } from 'date-fns'
 import { useRouter } from 'vue-router'
 import {
-  NButton,
+  NButton, NDropdown,
   NEllipsis,
   NIcon,
   NPopconfirm,
@@ -39,15 +39,26 @@ import {
 } from '@/common/column-width-config'
 import type { Router } from 'vue-router'
 import type { ProjectRes } from '@/service/modules/projects/types'
-import { DeleteOutlined, EditOutlined } from '@vicons/antd'
+import {ControlOutlined, DeleteOutlined, EditOutlined, UserOutlined} from '@vicons/antd'
+import {useUserStore} from "@/store/user/user";
+import {UserInfoRes} from "@/service/modules/users/types";
 
 export function useTable() {
   const { t } = useI18n()
   const router: Router = useRouter()
 
+  const userStore = useUserStore()
+  const userInfo = userStore.getUserInfo as UserInfoRes
+  const IS_ADMIN = userInfo.userType === 'ADMIN_USER'
+
   const handleEdit = (row: any) => {
     variables.showModalRef = true
     variables.statusRef = 1
+    variables.row = row
+  }
+
+  const handleAssign = (row: any) => {
+    variables.showWorkerGroupModalRef = true
     variables.row = row
   }
 
@@ -82,7 +93,10 @@ export function useTable() {
             ButtonLink,
             {
               onClick: () => {
-                router.push({ path: `/projects/${row.code}` })
+                router.push({
+                  path: `/projects/${row.code}`,
+                  query: { projectName: row.name }
+                })
               }
             },
             {
@@ -134,7 +148,7 @@ export function useTable() {
       {
         title: t('project.list.operation'),
         key: 'actions',
-        ...COLUMN_WIDTH_CONFIG['operation'](2),
+        ...COLUMN_WIDTH_CONFIG['operation'](3),
         render(row: any) {
           return h(NSpace, null, {
             default: () => [
@@ -161,6 +175,32 @@ export function useTable() {
                     ),
                   default: () => t('project.list.edit')
                 }
+              ),
+              IS_ADMIN &&
+              h(
+                  NTooltip,
+                  {
+                    trigger: 'hover'
+                  },
+                  {
+                    trigger: () =>
+                        h(
+                            NButton,
+                            {
+                              circle: true,
+                              type: 'info',
+                              size: 'small',
+                              class: 'edit',
+                              onClick: () => {
+                                handleAssign(row)
+                              }
+                            },
+                            {
+                              icon: () => h(NIcon, null, () => h(ControlOutlined))
+                            }
+                        ),
+                    default: () => t('project.list.assign_worker_group')
+                  }
               ),
               h(
                 NPopconfirm,
@@ -213,9 +253,10 @@ export function useTable() {
     tableData: [],
     page: ref(1),
     pageSize: ref(10),
-    searchVal: ref(null),
+    searchVal: ref(''),
     totalPage: ref(1),
     showModalRef: ref(false),
+    showWorkerGroupModalRef: ref(false),
     statusRef: ref(0),
     row: {},
     loadingRef: ref(false)

@@ -17,17 +17,19 @@
 
 package org.apache.dolphinscheduler.service.expand;
 
-import lombok.NonNull;
 import org.apache.dolphinscheduler.common.enums.CommandType;
 import org.apache.dolphinscheduler.dao.entity.ProcessInstance;
 import org.apache.dolphinscheduler.dao.entity.TaskInstance;
-import org.apache.dolphinscheduler.plugin.task.api.TaskExecutionContext;
 import org.apache.dolphinscheduler.plugin.task.api.model.Property;
 import org.apache.dolphinscheduler.plugin.task.api.parameters.AbstractParameters;
 
 import java.util.Date;
 import java.util.List;
 import java.util.Map;
+
+import javax.annotation.Nullable;
+
+import lombok.NonNull;
 
 public interface CuringParamsService {
 
@@ -53,7 +55,7 @@ public interface CuringParamsService {
      * @param allParamMap
      * @return
      */
-    String convertParameterPlaceholders(String val, Map<String, String> allParamMap);
+    String convertParameterPlaceholders(String val, Map<String, Property> allParamMap);
 
     /**
      * curing global params
@@ -65,7 +67,9 @@ public interface CuringParamsService {
      * @param timezone
      * @return
      */
-    String curingGlobalParams(Integer processInstanceId, Map<String, String> globalParamMap, List<Property> globalParamList, CommandType commandType, Date scheduleTime, String timezone);
+    String curingGlobalParams(Integer processInstanceId, Map<String, String> globalParamMap,
+                              List<Property> globalParamList, CommandType commandType, Date scheduleTime,
+                              String timezone);
 
     /**
      * param parsing preparation
@@ -74,7 +78,19 @@ public interface CuringParamsService {
      * @param processInstance
      * @return
      */
-    Map<String, Property> paramParsingPreparation(@NonNull TaskInstance taskInstance, @NonNull AbstractParameters parameters, @NonNull ProcessInstance processInstance);
+    Map<String, Property> paramParsingPreparation(@NonNull TaskInstance taskInstance,
+                                                  @NonNull AbstractParameters parameters,
+                                                  @NonNull ProcessInstance processInstance);
+
+    /**
+     * Parse workflow star parameter
+     */
+    Map<String, Property> parseWorkflowStartParam(@Nullable Map<String, String> cmdParam);
+
+    /**
+     * Parse workflow father parameter
+     */
+    Map<String, Property> parseWorkflowFatherParam(@Nullable Map<String, String> cmdParam);
 
     /**
      * preBuildBusinessParams
@@ -82,4 +98,6 @@ public interface CuringParamsService {
      * @return
      */
     Map<String, Property> preBuildBusinessParams(ProcessInstance processInstance);
+
+    Map<String, Property> getProjectParameterMap(long projectCode);
 }

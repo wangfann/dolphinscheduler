@@ -33,6 +33,8 @@ public class TaskInstanceUtils {
         target.setName(source.getName());
         target.setTaskType(source.getTaskType());
         target.setProcessInstanceId(source.getProcessInstanceId());
+        target.setProcessInstanceName(source.getProcessInstanceName());
+        target.setProjectCode(source.getProjectCode());
         target.setTaskCode(source.getTaskCode());
         target.setTaskDefinitionVersion(source.getTaskDefinitionVersion());
         target.setProcessInstanceName(source.getProcessInstanceName());
@@ -54,7 +56,8 @@ public class TaskInstanceUtils {
         target.setAppLink(source.getAppLink());
         target.setFlag(source.getFlag());
         target.setDependency(source.getDependency());
-        // todo: we need to cpoy the task params and then copy switchDependency, since the setSwitchDependency rely on task params, this is really a very bad practice.
+        // todo: we need to cpoy the task params and then copy switchDependency, since the setSwitchDependency rely on
+        // task params, this is really a very bad practice.
         target.setTaskParams(source.getTaskParams());
         target.setSwitchDependency(source.getSwitchDependency());
         target.setDuration(source.getDuration());
@@ -68,13 +71,13 @@ public class TaskInstanceUtils {
         target.setExecutorId(source.getExecutorId());
         target.setVarPool(source.getVarPool());
         target.setExecutorName(source.getExecutorName());
-        target.setResources(source.getResources());
         target.setDelayTime(source.getDelayTime());
         target.setDryRun(source.getDryRun());
         target.setTaskGroupId(source.getTaskGroupId());
         target.setCpuQuota(source.getCpuQuota());
         target.setMemoryMax(source.getMemoryMax());
         target.setTaskExecuteType(source.getTaskExecuteType());
+        target.setTestFlag(source.getTestFlag());
     }
 
 }

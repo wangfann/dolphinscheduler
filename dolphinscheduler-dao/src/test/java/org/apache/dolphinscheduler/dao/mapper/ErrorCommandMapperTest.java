@@ -26,8 +26,9 @@ import org.apache.dolphinscheduler.dao.entity.ProcessDefinition;
 import java.util.Date;
 import java.util.List;
 
-import org.junit.Assert;
-import org.junit.Test;
+import org.assertj.core.util.Lists;
+import org.junit.jupiter.api.Assertions;
+import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 
 public class ErrorCommandMapperTest extends BaseDaoTest {
@@ -43,7 +44,7 @@ public class ErrorCommandMapperTest extends BaseDaoTest {
      * @return ErrorCommand
      */
     private ErrorCommand insertOne() {
-        //insertOne
+        // insertOne
         ErrorCommand errorCommand = new ErrorCommand();
         errorCommand.setId(10101);
         errorCommand.setCommandType(CommandType.START_PROCESS);
@@ -52,10 +53,6 @@ public class ErrorCommandMapperTest extends BaseDaoTest {
         errorCommandMapper.insert(errorCommand);
         return errorCommand;
     }
-
-
-
-
 
     /**
      * test query
@@ -79,19 +76,14 @@ public class ErrorCommandMapperTest extends BaseDaoTest {
         List<CommandCount> commandCounts = errorCommandMapper.countCommandState(
                 null,
                 null,
-                new Long[0]
-        );
+                Lists.newArrayList(0L));
 
-        Long[] projectCodeArray = new Long[2];
-        projectCodeArray[0] = processDefinition.getProjectCode();
-        projectCodeArray[1] = 200L;
         List<CommandCount> commandCounts2 = errorCommandMapper.countCommandState(
                 null,
                 null,
-                projectCodeArray
-        );
+                Lists.newArrayList(processDefinition.getProjectCode(), 200L));
 
-        Assert.assertNotEquals(commandCounts.size(), 0);
-        Assert.assertNotEquals(commandCounts2.size(), 0);
+        Assertions.assertEquals(0, commandCounts.size());
+        Assertions.assertNotEquals(0, commandCounts2.size());
     }
 }

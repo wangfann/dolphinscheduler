@@ -18,6 +18,7 @@
 package org.apache.dolphinscheduler.plugin.alert.http;
 
 public final class HttpAlertConstants {
+
     public static final String URL = "$t('url')";
 
     public static final String NAME_URL = "url";
@@ -37,6 +38,12 @@ public final class HttpAlertConstants {
     public static final String REQUEST_TYPE = "$t('requestType')";
 
     public static final String NAME_REQUEST_TYPE = "requestType";
+
+    public static final String TIMEOUT = "$t('timeout')";
+
+    public static final String NAME_TIMEOUT = "timeout";
+
+    public static final int DEFAULT_TIMEOUT = 120;
 
     private HttpAlertConstants() {
         throw new UnsupportedOperationException("This is a utility class and cannot be instantiated");

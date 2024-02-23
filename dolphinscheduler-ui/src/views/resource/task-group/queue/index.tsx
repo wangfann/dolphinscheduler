@@ -15,11 +15,17 @@
  * limitations under the License.
  */
 
-import { ref, defineComponent, toRefs, reactive, onMounted, getCurrentInstance } from 'vue'
+import {
+  ref,
+  defineComponent,
+  toRefs,
+  reactive,
+  onMounted,
+  getCurrentInstance
+} from 'vue'
 import {
   NButton,
   NIcon,
-  NInput,
   NDataTable,
   NPagination,
   NSelect,
@@ -34,6 +40,7 @@ import { SelectMixedOption } from 'naive-ui/lib/select/src/interface'
 import { useRouter } from 'vue-router'
 import FormModal from '@/views/resource/task-group/queue/components/form-modal'
 import Card from '@/components/card'
+import Search from '@/components/input-search'
 import type { Ref } from 'vue'
 import type { Router } from 'vue-router'
 
@@ -169,20 +176,18 @@ const taskGroupQueue = defineComponent({
               v-model:value={this.searchParamRef.groupId}
               placeholder={t('resource.task_group_queue.task_group_name')}
             />
-            <NInput
-              allowInput={this.trim}
-              size='small'
-              v-model={[this.searchParamRef.processName, 'value']}
+            <Search
+              v-model:value={this.searchParamRef.processName}
               placeholder={t(
                 'resource.task_group_queue.workflow_instance_name'
               )}
-            ></NInput>
-            <NInput
-              allowInput={this.trim}
-              size='small'
-              v-model={[this.searchParamRef.instanceName, 'value']}
+              onSearch={onSearch}
+            ></Search>
+            <Search
+              v-model:value={this.searchParamRef.instanceName}
               placeholder={t('resource.task_group_queue.task_instance_name')}
-            ></NInput>
+              onSearch={onSearch}
+            ></Search>
             <NButton size='small' type='primary' onClick={onSearch}>
               <NIcon>
                 <SearchOutlined />

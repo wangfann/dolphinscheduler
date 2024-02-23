@@ -38,13 +38,19 @@ export function useK8s({
     description: '',
     timeoutFlag: false,
     localParams: [],
+    customizedLabels: [],
+    nodeSelectors: [],
     environmentCode: null,
     failRetryInterval: 1,
     failRetryTimes: 0,
     workerGroup: 'default',
     delayTime: 0,
     timeout: 30,
-    timeoutNotifyStrategy: ['WARN']
+    type: 'K8S',
+    displayRows: 10,
+    timeoutNotifyStrategy: ['WARN'],
+    kubeConfig: '',
+    namespace: ''
   } as INodeData)
 
   return {
@@ -52,14 +58,16 @@ export function useK8s({
       Fields.useName(),
       ...Fields.useTaskDefinition({ projectCode, from, readonly, data, model }),
       Fields.useRunFlag(),
+      Fields.useCache(),
       Fields.useDescription(),
       Fields.useTaskPriority(),
-      Fields.useWorkerGroup(),
-      Fields.useEnvironmentName(model, !model.id),
+      Fields.useWorkerGroup(projectCode),
+      Fields.useEnvironmentName(model, !data?.id),
       ...Fields.useTaskGroup(model, projectCode),
       ...Fields.useFailed(),
       Fields.useDelayTime(model),
       ...Fields.useTimeoutAlarm(model),
+      ...Fields.useDatasource(model),
       ...Fields.useK8s(model),
       Fields.usePreTasks()
     ] as IJsonItem[],

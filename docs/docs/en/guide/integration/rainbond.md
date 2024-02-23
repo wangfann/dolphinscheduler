@@ -6,30 +6,28 @@ This section describes the one-click deployment of high availability DolphinSche
 
 * Available Rainbond cloud native application management platform is a prerequisite，please refer to the official `Rainbond` documentation [Rainbond Quick install](https://www.rainbond.com/docs/quick-start/quick-install)
 
-## DolphinScheduler Cluster One-click Deployment 
+## DolphinScheduler Cluster One-click Deployment
 
-* Logging in and accessing the built-in open source app store, search the keyword `dolphinscheduler` to find the DolphinScheduler App.
+1. Go to Rainbond **Platform Management -> App Marketplace -> Open Source App Store** and search for **dolphinScheduler** to find the DolphinScheduler application.
 
 ![](../../../../img/rainbond/appstore-dolphinscheduler.png)
 
-* Click `install` on the right side of DolphinScheduler to go to the installation page. Fill in the corresponding information and click `OK` to start the installation. You will get automatically redirected to the application view.
+2. Click **install** on the right side of DolphinScheduler to go to the installation page. Fill in the corresponding information and click `OK` to start the installation. You will get automatically redirected to the application view.
 
-| Select item  | Description                          |
-| ------------ | ------------------------------------ |
+| Select item  |             Description             |
+|--------------|-------------------------------------|
 | Team name    | user workspace，Isolate by namespace |
-| Cluster name | select kubernetes cluster            |
-| Select app   | select application                   |
-| app version  | select DolphinScheduler version      |
+| Cluster name | select kubernetes cluster           |
+| Select app   | select application                  |
+| app version  | select DolphinScheduler version     |
 
 ![](../../../../img/rainbond/install-dolphinscheduler.png)
 
-* Wait a few minutes, the installation completes and `DolphinScheduler` will be running.
+3. Wait a few minutes, the installation completes and `DolphinScheduler` will be running.
 
 ![](../../../../img/rainbond/topology-dolphinscheduler.png)
 
-* Access DolphinScheduler-API components and the default user credentials are `admin` / `dolphinscheduler123`.
-
-![](../../../../img/rainbond/homepage-dolphinscheduler.png)
+4. Click the `access` button in the application to access the DolphinScheduler-API components through the domain name provided by Rainbond by default. Default user password is **admin/dolphinscheduler123**.
 
 ## API Master Worker Node Telescopic
 
@@ -42,13 +40,14 @@ Take `worker` as an example: enter the `component -> Telescopic` page, and set t
 To verify `worker` node, enter `DolphinScheduler UI -> Monitoring -> Worker` page to view detailed node information.
 
 ![](../../../../img/rainbond/monitor-dolphinscheduler.png)
+
 ## Configuration file
 
 API and Worker Services share the configuration file `/opt/dolphinscheduler/conf/common.properties`. To modify the configurations, you only need to modify that of the API service.
 
 ## How to support Python 3？
 
-Worker service is installed with default `Python3`，you can add environment variables `PYTHON_HOME=/usr/bin/python3`
+Worker service is installed with default `Python3`，you can add environment variables `PYTHON_LAUNCHER=/usr/bin/python3`
 
 ## How to support Hadoop, Spark, DataX ？
 
@@ -60,5 +59,7 @@ Take `DataX` as an example:
    * FILE_PATH：/opt/soft
    * LOCK_PATH：/opt/soft
 3. Update component, the plug-in `Datax` will be downloaded automatically and decompress to `/opt/soft`
-![](../../../../img/rainbond/plugin.png)
+   ![](../../../../img/rainbond/plugin.png)
+
 ---
+

@@ -17,18 +17,22 @@
 
 package org.apache.dolphinscheduler.api.service;
 
+import org.apache.dolphinscheduler.api.dto.workflow.WorkflowCreateRequest;
+import org.apache.dolphinscheduler.api.dto.workflow.WorkflowFilterRequest;
+import org.apache.dolphinscheduler.api.dto.workflow.WorkflowUpdateRequest;
+import org.apache.dolphinscheduler.api.utils.PageInfo;
+import org.apache.dolphinscheduler.api.utils.Result;
+import org.apache.dolphinscheduler.common.enums.ProcessExecutionTypeEnum;
+import org.apache.dolphinscheduler.dao.entity.ProcessDefinition;
+import org.apache.dolphinscheduler.dao.entity.TaskDefinitionLog;
+import org.apache.dolphinscheduler.dao.entity.User;
+
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 
 import javax.servlet.http.HttpServletResponse;
 
-import org.apache.dolphinscheduler.api.utils.Result;
-import org.apache.dolphinscheduler.common.enums.ProcessExecutionTypeEnum;
-import org.apache.dolphinscheduler.common.enums.ReleaseState;
-import org.apache.dolphinscheduler.dao.entity.ProcessDefinition;
-import org.apache.dolphinscheduler.dao.entity.Project;
-import org.apache.dolphinscheduler.dao.entity.TaskDefinitionLog;
-import org.apache.dolphinscheduler.dao.entity.User;
 import org.springframework.web.multipart.MultipartFile;
 
 /**
@@ -46,7 +50,6 @@ public interface ProcessDefinitionService {
      * @param globalParams global params
      * @param locations locations for nodes
      * @param timeout timeout
-     * @param tenantCode tenantCode
      * @param taskRelationJson relation json for nodes
      * @param taskDefinitionJson taskDefinitionJson
      * @param otherParamsJson otherParamsJson handle other params
@@ -59,11 +62,19 @@ public interface ProcessDefinitionService {
                                                 String globalParams,
                                                 String locations,
                                                 int timeout,
-                                                String tenantCode,
                                                 String taskRelationJson,
                                                 String taskDefinitionJson,
                                                 String otherParamsJson,
                                                 ProcessExecutionTypeEnum executionType);
+
+    /**
+     * create process definition V2
+     *
+     * @param loginUser login user
+     * @param workflowCreateRequest the new workflow object will be created
+     * @return New ProcessDefinition object created just now
+     */
+    ProcessDefinition createSingleProcessDefinition(User loginUser, WorkflowCreateRequest workflowCreateRequest);
 
     /**
      * query process definition list
@@ -97,13 +108,23 @@ public interface ProcessDefinitionService {
      * @param userId user id
      * @return process definition page
      */
-    Result queryProcessDefinitionListPaging(User loginUser,
-                                            long projectCode,
-                                            String searchVal,
-                                            String otherParamsJson,
-                                            Integer userId,
-                                            Integer pageNo,
-                                            Integer pageSize);
+    PageInfo<ProcessDefinition> queryProcessDefinitionListPaging(User loginUser,
+                                                                 long projectCode,
+                                                                 String searchVal,
+                                                                 String otherParamsJson,
+                                                                 Integer userId,
+                                                                 Integer pageNo,
+                                                                 Integer pageSize);
+
+    /**
+     * Filter resource process definitions
+     *
+     * @param loginUser login user
+     * @param workflowFilterRequest workflow filter requests
+     * @return List process definition
+     */
+    PageInfo<ProcessDefinition> filterProcessDefinition(User loginUser,
+                                                        WorkflowFilterRequest workflowFilterRequest);
 
     /**
      * query detail of process definition
@@ -119,11 +140,25 @@ public interface ProcessDefinitionService {
                                                      long code);
 
     /**
-     * query detail of process definition
+     * Get resource workflow
      *
      * @param loginUser login user
+     * @param code      process definition code
+     * @return Process definition Object
+     */
+    ProcessDefinition getProcessDefinition(User loginUser,
+                                           long code);
+
+    Optional<ProcessDefinition> queryWorkflowDefinition(long workflowDefinitionCode, int workflowDefinitionVersion);
+    ProcessDefinition queryWorkflowDefinitionThrowExceptionIfNotFound(long workflowDefinitionCode,
+                                                                      int workflowDefinitionVersion);
+
+    /**
+     * query detail of process definition
+     *
+     * @param loginUser   login user
      * @param projectCode project code
-     * @param name process definition name
+     * @param name        process definition name
      * @return process definition detail
      */
 
@@ -168,10 +203,8 @@ public interface ProcessDefinitionService {
      * @param globalParams global params
      * @param locations locations for nodes
      * @param timeout timeout
-     * @param tenantCode tenantCode
      * @param taskRelationJson relation json for nodes
      * @param taskDefinitionJson taskDefinitionJson
-     * @param otherParamsJson otherParamsJson handle other params
      * @return update result code
      */
     Map<String, Object> updateProcessDefinition(User loginUser,
@@ -182,10 +215,8 @@ public interface ProcessDefinitionService {
                                                 String globalParams,
                                                 String locations,
                                                 int timeout,
-                                                String tenantCode,
                                                 String taskRelationJson,
                                                 String taskDefinitionJson,
-                                                String otherParamsJson,
                                                 ProcessExecutionTypeEnum executionType);
 
     /**
@@ -194,37 +225,27 @@ public interface ProcessDefinitionService {
      * @param loginUser login user
      * @param projectCode project code
      * @param name name
+     * @param processDefinitionCode processDefinitionCode
      * @return true if process definition name not exists, otherwise false
      */
     Map<String, Object> verifyProcessDefinitionName(User loginUser,
                                                     long projectCode,
-                                                    String name);
+                                                    String name,
+                                                    long processDefinitionCode);
 
     /**
-     * delete process definition by code
+     * batch delete process definition by code
      *
      * @param loginUser login user
      * @param projectCode project code
-     * @param code process definition code
+     * @param codes process definition codes
      * @return delete result code
      */
-    Map<String, Object> deleteProcessDefinitionByCode(User loginUser,
-                                                      long projectCode,
-                                                      long code);
+    Map<String, Object> batchDeleteProcessDefinitionByCodes(User loginUser,
+                                                            long projectCode,
+                                                            String codes);
 
-    /**
-     * release process definition: online / offline
-     *
-     * @param loginUser login user
-     * @param projectCode project code
-     * @param code process definition code
-     * @param releaseState release state
-     * @return release result code
-     */
-    Map<String, Object> releaseProcessDefinition(User loginUser,
-                                                 long projectCode,
-                                                 long code,
-                                                 ReleaseState releaseState);
+    void deleteProcessDefinitionByCode(User loginUser, long workflowDefinitionCode);
 
     /**
      * batch export process definition by codes
@@ -269,7 +290,8 @@ public interface ProcessDefinitionService {
      * @param processTaskRelationJson process task relation json
      * @return check result code
      */
-    Map<String, Object> checkProcessNodeList(String processTaskRelationJson, List<TaskDefinitionLog> taskDefinitionLogs);
+    Map<String, Object> checkProcessNodeList(String processTaskRelationJson,
+                                             List<TaskDefinitionLog> taskDefinitionLogs);
 
     /**
      * get task node details based on process definition
@@ -328,7 +350,7 @@ public interface ProcessDefinitionService {
      * @param limit limit
      * @return tree view json data
      */
-    Map<String, Object> viewTree(User loginUser,long projectCode, long code, Integer limit);
+    Map<String, Object> viewTree(User loginUser, long projectCode, long code, Integer limit);
 
     /**
      * switch the defined process definition version
@@ -375,93 +397,33 @@ public interface ProcessDefinitionService {
                                                        int version);
 
     /**
-     * create empty process definition
-     *
-     * @param loginUser login user
-     * @param projectCode project code
-     * @param name process definition name
-     * @param description description
-     * @param globalParams globalParams
-     * @param timeout timeout
-     * @param tenantCode tenantCode
-     * @param scheduleJson scheduleJson
-     * @return process definition code
-     */
-    Map<String, Object> createEmptyProcessDefinition(User loginUser,
-                                                     long projectCode,
-                                                     String name,
-                                                     String description,
-                                                     String globalParams,
-                                                     int timeout,
-                                                     String tenantCode,
-                                                     String scheduleJson,
-                                                     ProcessExecutionTypeEnum executionType);
-
-    /**
      * update process definition basic info, not including task definition, task relation and location.
      *
      * @param loginUser login user
-     * @param projectCode project code
-     * @param name process definition name
-     * @param code process definition code
-     * @param description description
-     * @param globalParams globalParams
-     * @param timeout timeout
-     * @param tenantCode tenantCode
-     * @param scheduleJson scheduleJson
-     * @param otherParamsJson otherParamsJson handle other params
-     * @param executionType executionType
-     * @return update result code
+     * @param workflowCode workflow resource code you want to update
+     * @param workflowUpdateRequest workflow update requests
+     * @return ProcessDefinition instance
      */
-    Map<String, Object> updateProcessDefinitionBasicInfo(User loginUser,
-                                                         long projectCode,
-                                                         String name,
-                                                         long code,
-                                                         String description,
-                                                         String globalParams,
-                                                         int timeout,
-                                                         String tenantCode,
-                                                         String scheduleJson,
-                                                         String otherParamsJson,
-                                                         ProcessExecutionTypeEnum executionType);
+    ProcessDefinition updateSingleProcessDefinition(User loginUser,
+                                                    long workflowCode,
+                                                    WorkflowUpdateRequest workflowUpdateRequest);
 
     /**
-     * release process definition and schedule
-     *
-     * @param loginUser login user
+     * Online the workflow definition, it will check all sub workflow is online.
+     */
+    void onlineWorkflowDefinition(User loginUser, Long projectCode, Long workflowDefinitionCode);
+
+    /**
+     * Offline the workflow definition. It will auto offline the scheduler.
+     */
+    void offlineWorkflowDefinition(User loginUser, Long projectCode, Long workflowDefinitionCode);
+
+    /**
+     * view process variables
+     * @param loginUser    login user
      * @param projectCode project code
      * @param code process definition code
-     * @param releaseState releaseState
-     * @return update result code
+     * @return variables data
      */
-    Map<String, Object> releaseWorkflowAndSchedule(User loginUser,
-                                                   long projectCode,
-                                                   long code,
-                                                   ReleaseState releaseState);
-
-    /**
-     * delete other relation
-     * @param project
-     * @param result
-     * @param processDefinition
-     */
-    void deleteOtherRelation(Project project, Map<String, Object> result, ProcessDefinition processDefinition);
-
-    /**
-     * save other relation
-     * @param loginUser
-     * @param processDefinition
-     * @param result
-     * @param otherParamsJson
-     */
-    void saveOtherRelation(User loginUser, ProcessDefinition processDefinition, Map<String, Object> result, String otherParamsJson);
-
-    /**
-     * get Json String
-     * @param loginUser
-     * @param processDefinition
-     * @return Json String
-     */
-    String doOtherOperateProcess(User loginUser, ProcessDefinition processDefinition);
+    Map<String, Object> viewVariables(User loginUser, long projectCode, long code);
 }
-

@@ -62,6 +62,7 @@ export default defineComponent({
       variables,
       handleStartDefinition,
       getWorkerGroups,
+      getTenantList,
       getAlertGroups,
       getEnvironmentList,
       getStartParamsList
@@ -118,6 +119,7 @@ export default defineComponent({
 
     onMounted(() => {
       getWorkerGroups()
+      getTenantList()
       getAlertGroups()
       getEnvironmentList()
     })
@@ -160,9 +162,7 @@ export default defineComponent({
       >
         <NForm ref='startFormRef' model={this.startForm}>
           <NFormItem label={t('project.task.task_name')} path='task_name'>
-            <div title={this.row.taskName}>
-              {this.row.taskName}
-            </div>
+            <div title={this.row.taskName}>{this.row.taskName}</div>
           </NFormItem>
           <NFormItem
             label={t('project.task.notification_strategy')}
@@ -178,6 +178,12 @@ export default defineComponent({
               options={this.workerGroups}
               onUpdateValue={this.updateWorkerGroup}
               v-model:value={this.startForm.workerGroup}
+            />
+          </NFormItem>
+          <NFormItem label={t('project.task.tenant_code')} path='tenantCode'>
+            <NSelect
+              options={this.tenantList}
+              v-model:value={this.startForm.tenantCode}
             />
           </NFormItem>
           <NFormItem

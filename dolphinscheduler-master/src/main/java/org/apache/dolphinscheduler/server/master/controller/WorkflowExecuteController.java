@@ -17,7 +17,7 @@
 
 package org.apache.dolphinscheduler.server.master.controller;
 
-import org.apache.dolphinscheduler.remote.dto.WorkflowExecuteDto;
+import org.apache.dolphinscheduler.extract.master.dto.WorkflowExecuteDto;
 import org.apache.dolphinscheduler.server.master.service.ExecutingService;
 
 import java.util.Optional;
@@ -45,7 +45,8 @@ public class WorkflowExecuteController {
     @GetMapping("")
     @ResponseStatus(HttpStatus.OK)
     public WorkflowExecuteDto queryExecuteData(@RequestParam("id") int processInstanceId) {
-        Optional<WorkflowExecuteDto> workflowExecuteDtoOptional = executingService.queryWorkflowExecutingData(processInstanceId);
+        Optional<WorkflowExecuteDto> workflowExecuteDtoOptional =
+                executingService.queryWorkflowExecutingData(processInstanceId);
         return workflowExecuteDtoOptional.orElse(null);
     }
 }

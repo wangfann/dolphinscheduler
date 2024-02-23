@@ -19,8 +19,8 @@ package org.apache.dolphinscheduler.plugin.task.api.utils;
 
 import org.apache.dolphinscheduler.plugin.task.api.model.JdbcInfo;
 
-import org.junit.Assert;
-import org.junit.Test;
+import org.junit.jupiter.api.Assertions;
+import org.junit.jupiter.api.Test;
 
 /**
  * JdbcUrlParserTest
@@ -34,11 +34,21 @@ public class JdbcUrlParserTest {
                         + "useUnicode=true&characterEncoding=UTF-8");
         if (jdbcInfo != null) {
             String jdbcInfoStr = jdbcInfo.toString();
-            String expected = "JdbcInfo{host='localhost', port='3306', "
-                    + "driverName='mysql', database='dolphinscheduler', "
-                    + "params='useUnicode=true&characterEncoding=UTF-8', "
-                    + "address='jdbc:mysql://localhost:3306'}";
-            Assert.assertEquals(expected,jdbcInfoStr);
+            String expected =
+                    "JdbcInfo(host=localhost, port=3306, driverName=mysql, database=dolphinscheduler, " +
+                            "params={useUnicode=true, characterEncoding=UTF-8}, address=jdbc:mysql://localhost:3306, jdbcUrl=jdbc:mysql://localhost:3306/dolphinscheduler)";
+            Assertions.assertEquals(expected, jdbcInfoStr);
+        }
+
+        // bad jdbc url case
+        jdbcInfo = JdbcUrlParser.getJdbcInfo("jdbc:mysql://localhost:3306/dolphinscheduler?"
+                + "useUnicode=true&&characterEncoding=UTF-8");
+        if (jdbcInfo != null) {
+            String jdbcInfoStr = jdbcInfo.toString();
+            String expected =
+                    "JdbcInfo(host=localhost, port=3306, driverName=mysql, database=dolphinscheduler, " +
+                            "params={useUnicode=true, characterEncoding=UTF-8}, address=jdbc:mysql://localhost:3306, jdbcUrl=jdbc:mysql://localhost:3306/dolphinscheduler)";
+            Assertions.assertEquals(expected, jdbcInfoStr);
         }
     }
 }

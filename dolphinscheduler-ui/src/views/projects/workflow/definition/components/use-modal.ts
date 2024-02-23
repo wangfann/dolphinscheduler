@@ -26,9 +26,8 @@ import {
   importProcessDefinition,
   queryProcessDefinitionByCode
 } from '@/service/modules/process-definition'
-import { queryAllWorkerGroups } from '@/service/modules/worker-groups'
 import { queryAllEnvironmentList } from '@/service/modules/environment'
-import { listAlertGroupById } from '@/service/modules/alert-group'
+import { listNormalAlertGroupById } from '@/service/modules/alert-group'
 import { startProcessInstance } from '@/service/modules/executors'
 import {
   createSchedule,
@@ -38,6 +37,8 @@ import {
 import { parseTime } from '@/common/common'
 import { EnvironmentItem } from '@/service/modules/environment/types'
 import { ITimingState, ProcessInstanceReq } from './types'
+import { queryTenantList } from '@/service/modules/tenants'
+import { queryWorkerGroupsByProjectCode } from '@/service/modules/projects-worker-group'
 
 export function useModal(
   state: any,
@@ -50,6 +51,7 @@ export function useModal(
   const variables = reactive<ITimingState>({
     projectCode: Number(route.params.projectCode),
     workerGroups: [],
+    tenantList: [],
     alertGroups: [],
     environmentList: [],
     startParamsList: [],
@@ -85,13 +87,14 @@ export function useModal(
     }
   }
 
-  const handleStartDefinition = async (code: number) => {
+  const handleStartDefinition = async (code: number, version: number) => {
     await state.startFormRef.validate()
 
     if (state.saving) return
     state.saving = true
     try {
       state.startForm.processDefinitionCode = code
+      state.startForm.version = version
       const params = omit(state.startForm, [
         'startEndTime',
         'scheduleTime',
@@ -125,7 +128,6 @@ export function useModal(
       params.startParams = !_.isEmpty(startParams)
         ? JSON.stringify(startParams)
         : ''
-
       await startProcessInstance(params, variables.projectCode)
       window.$message.success(t('project.workflow.success'))
       state.saving = false
@@ -219,16 +221,23 @@ export function useModal(
         ? state.timingForm.warningGroupId
         : 0,
       workerGroup: state.timingForm.workerGroup,
+      tenantCode: state.timingForm.tenantCode,
       environmentCode: state.timingForm.environmentCode
     }
     return data
   }
 
   const getWorkerGroups = () => {
-    queryAllWorkerGroups().then((res: any) => {
-      variables.workerGroups = res.map((item: string) => ({
-        label: item,
-        value: item
+    queryWorkerGroupsByProjectCode(variables.projectCode).then((res: any) => {
+      variables.workerGroups = res.data.map((item: any) =>({label: item.workerGroup, value: item.workerGroup }))
+    })
+  }
+
+  const getTenantList = () => {
+    queryTenantList().then((res: any) => {
+      variables.tenantList = res.map((item: any) => ({
+        label: item.tenantCode,
+        value: item.tenantCode
       }))
     })
   }
@@ -244,7 +253,7 @@ export function useModal(
   }
 
   const getAlertGroups = () => {
-    listAlertGroupById().then((res: any) => {
+    listNormalAlertGroupById().then((res: any) => {
       variables.alertGroups = res.map((item: any) => ({
         label: item.groupName,
         value: item.id
@@ -300,6 +309,7 @@ export function useModal(
     handleUpdateTiming,
     handleBatchCopyDefinition,
     getWorkerGroups,
+    getTenantList,
     getAlertGroups,
     getEnvironmentList,
     getStartParamsList,

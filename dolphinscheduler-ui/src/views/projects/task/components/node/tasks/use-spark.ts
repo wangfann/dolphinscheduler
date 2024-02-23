@@ -44,7 +44,6 @@ export function useSpark({
     delayTime: 0,
     timeout: 30,
     programType: 'SCALA',
-    sparkVersion: 'SPARK2',
     rawScript: '',
     deployMode: 'local',
     driverCores: 1,
@@ -52,7 +51,9 @@ export function useSpark({
     numExecutors: 2,
     executorMemory: '2G',
     executorCores: 2,
-    timeoutNotifyStrategy: ['WARN']
+    yarnQueue: '',
+    timeoutNotifyStrategy: ['WARN'],
+    sqlExecutionType: 'SCRIPT'
   } as INodeData)
 
   return {
@@ -60,9 +61,10 @@ export function useSpark({
       Fields.useName(from),
       ...Fields.useTaskDefinition({ projectCode, from, readonly, data, model }),
       Fields.useRunFlag(),
+      Fields.useCache(),
       Fields.useDescription(),
       Fields.useTaskPriority(),
-      Fields.useWorkerGroup(),
+      Fields.useWorkerGroup(projectCode),
       Fields.useEnvironmentName(model, !data?.id),
       ...Fields.useTaskGroup(model, projectCode),
       ...Fields.useFailed(),
